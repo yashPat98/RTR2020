@@ -1,2 +1,2 @@
-# RTR2020
-RTR 2020 batch
+# Programs with GLUT
+RTR programs with OpenGL Utility Toolkit
