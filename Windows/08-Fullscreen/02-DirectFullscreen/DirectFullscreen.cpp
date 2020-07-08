@@ -114,12 +114,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
             {
                 case 0x5B:
                     //fall through
-                case 0x5C:
+                case 0x5C:                                     //Windows key to minimize 
                     ShowWindow(hwnd, SW_MINIMIZE);
                     UpdateWindow(hwnd);
                     break;
 
-                case 0x1B:
+                case 0x1B:                                     //Esc key to quit
                     PostQuitMessage(0);
                     break;
                 

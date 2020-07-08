@@ -10,7 +10,7 @@ LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 //global variable declaration
 DWORD dwStyle;
-WINDOWPLACEMENT wpPrev = { sizeof(WINDOWPLACEMENT) };                                                  //TODO
+WINDOWPLACEMENT wpPrev = { sizeof(WINDOWPLACEMENT) };                                                  
 bool gbFullscreen = false;
 HWND ghwnd;
 
@@ -86,9 +86,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
         case WM_KEYDOWN:
             switch(wParam)
             {
-                case 0x46:                                  //TODO
+                case 0x46:                                  
                     //fall through
-                case 0x66:                                  //TODO
+                case 0x66:                                  
                     ToggleFullscreen();
                     break;
                 
@@ -112,13 +112,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 void ToggleFullscreen(void)
 {
     //local variable declartion
-    MONITORINFO mi = { sizeof(MONITORINFO) };                                           //TODO
-
+    MONITORINFO mi = { sizeof(MONITORINFO) };                                          
+    
     //code
     if(gbFullscreen == false)
     {
         dwStyle = GetWindowLong(ghwnd, GWL_STYLE);
-        
         if(dwStyle & WS_OVERLAPPEDWINDOW)
         {
             if(GetWindowPlacement(ghwnd, &wpPrev) && GetMonitorInfo(MonitorFromWindow(ghwnd, MONITORINFOF_PRIMARY), &mi))
@@ -131,7 +130,6 @@ void ToggleFullscreen(void)
                     mi.rcMonitor.right - mi.rcMonitor.left,
                     mi.rcMonitor.bottom - mi.rcMonitor.top,
                     SWP_NOZORDER | SWP_FRAMECHANGED);
-
             }
         }
 
