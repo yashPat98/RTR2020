@@ -2,11 +2,11 @@
 #include <windows.h>
 #include <stdio.h>
 
-//global variable declaration
-FILE *gpFile = NULL;
-
 //global function declaration
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
+
+//global variable declaration
+FILE *gpFile = NULL;
 
 //WinMain()
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdLine)
