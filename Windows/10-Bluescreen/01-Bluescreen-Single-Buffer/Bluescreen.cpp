@@ -76,7 +76,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
     //create window
     hwnd = CreateWindowEx(WS_EX_APPWINDOW,
         szAppName,
-        TEXT("My Application : OpenGL Template"),
+        TEXT("My Application : OpenGL Bluescreen"),
         WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_VISIBLE,
         (cxScreen - WIN_WIDTH) / 2,
         (cyScreen - WIN_HEIGHT) / 2,
