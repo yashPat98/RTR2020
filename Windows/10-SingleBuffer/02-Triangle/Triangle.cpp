@@ -34,7 +34,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 {
     //function prototypes
     void Initialize(void);
-    void Display(void);
 
     //variable declaration
     WNDCLASSEX wndclass;
@@ -121,7 +120,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
                 //here you should call update function for OpenGL rendering
 
                 //here you should call display function for OpenGL rendering
-                Display();
             }
         }
         
@@ -136,12 +134,17 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
     //function prototypes
     void ToggleFullscreen(void);
+    void Display(void);
     void Resize(int, int);
     void UnInitialize(void);
 
     //code
     switch(iMsg)
     {     
+        case WM_PAINT:
+            Display();
+            break;
+            
         case WM_SETFOCUS:
             gbActiveWindow = true;
             break;
@@ -257,14 +260,14 @@ void Initialize(void)
     //initialization of PIXELFORMATDESCRIPTOR
     pfd.nSize       = sizeof(PIXELFORMATDESCRIPTOR);
     pfd.nVersion    = 1;
-    pfd.dwFlags     = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    pfd.dwFlags     = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL;
     pfd.iPixelType  = PFD_TYPE_RGBA;
     pfd.cColorBits  = 32;
     pfd.cRedBits    = 8;
     pfd.cBlueBits   = 8;
     pfd.cGreenBits  = 8;
     pfd.cAlphaBits  = 8;
-    pfd.cDepthBits  = 32;
+    //pfd.cDepthBits  = 32;
 
     //choose required pixel format from device context
     iPixelFormatIndex = ChoosePixelFormat(ghdc, &pfd);
@@ -334,7 +337,7 @@ void Display(void)
         glVertex3f(1.0f, -1.0f, 0.0f);
     glEnd();
 
-    SwapBuffers(ghdc);
+    glFlush();
 }
 
 
