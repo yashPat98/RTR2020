@@ -270,27 +270,27 @@ void Initialize(void)
     iPixelFormatIndex = ChoosePixelFormat(ghdc, &pfd);
     if(iPixelFormatIndex == 0)
     {
-        fprintf(gpFile, "Line 268 :  ChoosePixelFormat() failed.\n");
+        fprintf(gpFile, "ChoosePixelFormat() failed.\n");
         DestroyWindow(ghwnd);
     }
 
     //set that pixel format as current
     if(SetPixelFormat(ghdc, iPixelFormatIndex, &pfd) == FALSE)
     {
-        fprintf(gpFile, "Line 275 :  SetPixelFormat() failed.\n");
+        fprintf(gpFile, "SetPixelFormat() failed.\n");
         DestroyWindow(ghwnd);
     }
 
     ghrc = wglCreateContext(ghdc);
     if(ghrc == NULL)
     {
-        fprintf(gpFile, "Line 283 :  wglCreateContext() failed.\n");
+        fprintf(gpFile, "wglCreateContext() failed.\n");
         DestroyWindow(ghwnd);
     }
 
     if(wglMakeCurrent(ghdc, ghrc) == FALSE)
     {
-        fprintf(gpFile, "Line 290 :  wglMakeCurrent() failed.\n");
+        fprintf(gpFile, "wglMakeCurrent() failed.\n");
         DestroyWindow(ghwnd);
     }
 

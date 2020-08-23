@@ -265,26 +265,26 @@ void Initialize(void)
     iPixelFormatIndex = ChoosePixelFormat(ghdc, &pfd);
     if(iPixelFormatIndex == 0)
     {
-        fprintf(gpFile, "Line 252:  ChoosePixelFormat() failed.\n");
+        fprintf(gpFile, "ChoosePixelFormat() failed.\n");
         DestroyWindow(ghwnd);
     }
 
     if(SetPixelFormat(ghdc, iPixelFormatIndex, &pfd) == FALSE)
     {
-        fprintf(gpFile, "Line 259:  SetPixelFormat() failed.\n");
+        fprintf(gpFile, "SetPixelFormat() failed.\n");
         DestroyWindow(ghwnd);
     }
 
     ghrc = wglCreateContext(ghdc);
     if(ghrc == NULL)
     {
-        fprintf(gpFile, "Line 265:  wglCreateContext() failed.\n");
+        fprintf(gpFile, "wglCreateContext() failed.\n");
         DestroyWindow(ghwnd);
     }
 
     if(wglMakeCurrent(ghdc, ghrc) == FALSE)
     {
-        fprintf(gpFile, "Line 272:  wglMakeCurrent() failed.\n");
+        fprintf(gpFile, "wglMakeCurrent() failed.\n");
         DestroyWindow(ghwnd);
     }
 
