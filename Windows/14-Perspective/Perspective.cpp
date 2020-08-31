@@ -36,6 +36,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
 {
     //function prototypes
     void Initialize(void);
+    void Display(void);
 
     //variable declaration
     WNDCLASSEX wndclass;
@@ -122,6 +123,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
                 //here you should call update function for OpenGL rendering
 
                 //here you should call display function for OpenGL rendering
+                Display();
             }
         }
         
@@ -136,17 +138,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
     //function prototypes
     void ToggleFullscreen(void);
-    void Display(void);
     void Resize(int, int);
     void UnInitialize(void);
 
     //code
     switch(iMsg)
-    {     
-        case WM_PAINT:
-            Display();
-            break;
-            
+    {              
         case WM_SETFOCUS:
             gbActiveWindow = true;
             break;
