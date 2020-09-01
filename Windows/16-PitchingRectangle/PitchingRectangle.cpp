@@ -270,7 +270,7 @@ void Initialize(void)
     pfd.cBlueBits   = 8;
     pfd.cGreenBits  = 8;
     pfd.cAlphaBits  = 8;
-    //pfd.cDepthBits  = 32;
+    pfd.cDepthBits  = 32;
 
     //choose required pixel format from device context
     iPixelFormatIndex = ChoosePixelFormat(ghdc, &pfd);
@@ -350,7 +350,7 @@ void Display(void)
         glColor3f(0.0f, 0.0f, 1.0f);
         glVertex3f(1.0f, -1.0f, 0.0f);
     glEnd();
-
+    
     SwapBuffers(ghdc);
 }
 

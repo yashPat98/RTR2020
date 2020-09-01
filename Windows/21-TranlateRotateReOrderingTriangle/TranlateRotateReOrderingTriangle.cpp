@@ -31,7 +31,7 @@ HDC ghdc = NULL;                                         //current device contex
 HGLRC ghrc = NULL;                                       //rendering context
 
 //variables for Display()
-GLfloat xTrans = 0.0f;
+GLfloat angle = 0.0f;
 
 //WinMain() - entry point function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -84,7 +84,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
     //create window
     hwnd = CreateWindowEx(WS_EX_APPWINDOW,
         szAppName,
-        TEXT("OpenGL : TranslatingTriangle"),
+        TEXT("OpenGL : TranlateRotateReOrderingTriangle"),
         WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_VISIBLE,
         (cxScreen - WIN_WIDTH) / 2,
         (cyScreen - WIN_HEIGHT) / 2,
@@ -334,7 +334,8 @@ void Display(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xTrans, 0.0f, -3.0f);
+    glRotatef(angle, 0.0f, 1.0f, 0.0f);
+    glTranslatef(0.0f,  0.0f, -3.0f);
 
     glBegin(GL_TRIANGLES);
         glColor3f(1.0f, 0.0f, 0.0f);
@@ -353,14 +354,10 @@ void Display(void)
 
 void Update(void)
 {
-    //variable declaration
-    static GLfloat xStep = 0.001f;
-
     //code
-    if(xTrans > 2.0f || xTrans < -2.0f)
-        xStep = -xStep;
-
-    xTrans = xTrans + xStep;
+    angle = angle + 0.1f;
+    if(angle >= 360.0f)
+        angle = 0.0f;
 }
 
 
