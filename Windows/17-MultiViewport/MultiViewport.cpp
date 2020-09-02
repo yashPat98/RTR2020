@@ -32,6 +32,7 @@ HGLRC ghrc = NULL;                                    //rendering context
 
 
 
+
 //WinMain()
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
 {
@@ -146,8 +147,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
     void Uninitialize(void);
 
     //variable declaration
-    static RECT rc;
-    static LONG width, height;
+    static int width = 0;
+    static int height = 0;
 
     //code
     switch(iMsg)
@@ -164,8 +165,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
             return (0);
 
         case WM_SIZE:
+        {
+            width = LOWORD(lParam);
+            height = HIWORD(lParam);
             Resize(LOWORD(lParam), HIWORD(lParam));
             break;
+        }
 
         case WM_KEYDOWN:
             switch(wParam)
@@ -173,100 +178,60 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
                 case VK_NUMPAD0:
                     //fall through
                 case 0x30:
-                    GetClientRect(hwnd, &rc);
-                    width = rc.right - rc.left;
-                    height = rc.bottom - rc.top;
-
                     glViewport(0, 0, width, height);
                     break;
 
                 case VK_NUMPAD1:
                     //fall through
                 case 0x31:
-                    GetClientRect(hwnd, &rc);
-                    width = rc.right - rc.left;
-                    height = rc.bottom - rc.top;
-
                     glViewport(0, height / 2, width / 2, height / 2);
                     break;
 
                 case VK_NUMPAD2:  
                     //fall through  
                 case 0x32:
-                    GetClientRect(hwnd, &rc);
-                    width = rc.right - rc.left;
-                    height = rc.bottom - rc.top;
-
                     glViewport(width / 2, height / 2, width / 2, height / 2);
                     break;
 
                 case VK_NUMPAD3:
                     //fall through
                 case 0x33:
-                    GetClientRect(hwnd, &rc);
-                    width = rc.right - rc.left;
-                    height = rc.bottom - rc.top;
-
                     glViewport(width / 2, 0, width / 2, height / 2);
                     break;
 
                 case VK_NUMPAD4:
                     //fall through
                 case 0x34:
-                    GetClientRect(hwnd, &rc);
-                    width = rc.right - rc.left;
-                    height = rc.bottom - rc.top;
-
                     glViewport(0, 0, width / 2, height / 2);
                     break;
 
                 case VK_NUMPAD5:
                     //fall through
                 case 0x35:
-                    GetClientRect(hwnd, &rc);
-                    width = rc.right - rc.left;
-                    height = rc.bottom - rc.top;
-
                     glViewport(0, 0, width / 2, height);
                     break;
 
                 case VK_NUMPAD6:
                     //fall through
                 case 0x36:
-                    GetClientRect(hwnd, &rc);
-                    width = rc.right - rc.left;
-                    height = rc.bottom - rc.top;
-
                     glViewport(width / 2, 0, width / 2, height);
                     break;
 
                 case VK_NUMPAD7:
                     //fall through
                 case 0x37:
-                    GetClientRect(hwnd, &rc);
-                    width = rc.right - rc.left;
-                    height = rc.bottom - rc.top;
-
                     glViewport(0, height / 2, width, height / 2);
                     break;
 
                 case VK_NUMPAD8:
                     //fall through
                 case 0x38:
-                    GetClientRect(hwnd, &rc);
-                    width = rc.right - rc.left;
-                    height = rc.bottom - rc.top;
-
                     glViewport(0, 0, width, height / 2);
                     break;
 
                 case VK_NUMPAD9:
                     //fall through
                 case 0x39:
-                    GetClientRect(hwnd, &rc);
-                    width = rc.right - rc.left;
-                    height = rc.bottom - rc.top;
-
                     glViewport((width - (width / 2)) / 2, (height - (height / 2)) / 2, width / 2, height / 2);
                     break;
 
