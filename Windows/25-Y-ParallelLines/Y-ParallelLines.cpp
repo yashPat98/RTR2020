@@ -326,7 +326,7 @@ void Display(void)
 {
     //variable declaration
     int yStep;
-    GLfloat Interval = 0.0395f;
+    GLfloat Interval = 0.06f;
 
     //code
     glClear(GL_COLOR_BUFFER_BIT);
@@ -334,7 +334,7 @@ void Display(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(0.0f,  0.0f, -1.0f);
+    glTranslatef(0.0f,  0.0f, -2.0f);
 
     glColor3f(0.0f, 0.0f, 1.0f);
     for(yStep = -20; yStep <= 20; yStep++)
