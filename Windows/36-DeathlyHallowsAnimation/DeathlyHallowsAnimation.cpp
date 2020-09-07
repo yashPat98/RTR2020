@@ -327,7 +327,7 @@ void Display(void)
 {
     //variable declaration
     float x, y, fAngle, radius;
-    float step = 0.0005f;
+    float step = 0.0004f;
    
     static GLfloat Tcx = -5.0f; 
     static GLfloat Tcy = -5.0f;
@@ -336,6 +336,9 @@ void Display(void)
 
     static GLfloat Tsx = 5.0f;
     static GLfloat Tsy = -5.0f;
+
+    static GLfloat cRot = 0.0f;
+    static GLfloat sRot = 0.0f;
 
     bool cloak = true;
     bool wand = false;
@@ -353,6 +356,7 @@ void Display(void)
     if(cloak)
     {
         glTranslatef(Tcx, Tcy, -3.0f);
+        glRotatef(cRot, 0.0f, 1.0f, 0.0f);
         glScalef(0.5f, 0.5f, 0.5f);
         glBegin(GL_LINE_LOOP);
             glVertex3f(0.0f, 1.0f, 0.0f);
@@ -372,6 +376,7 @@ void Display(void)
     {
         //trnslate to center of incircle
         glTranslatef(Tsx, Tsy - 0.19f, -3.0f);
+        glRotatef(sRot, 0.0f, 1.0f, 0.0f);
         glScalef(0.5f, 0.5f, 0.5f);
         
         //radius of incircle = area / semi-perimeter;
@@ -430,6 +435,14 @@ void Display(void)
         if(Tsy < 0.0f)
             Tsy = Tsy + step;  
     }
+
+    cRot = cRot + 0.1f;
+    if(cRot >= 360.0f)
+        cRot = 0.0f;
+
+    sRot = sRot + 0.1f;
+    if(sRot >= 360.0f)
+        sRot = 0.0f;
 
     SwapBuffers(ghdc);
 }
