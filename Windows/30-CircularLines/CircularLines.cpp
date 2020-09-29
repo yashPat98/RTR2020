@@ -13,7 +13,7 @@
 //macros
 #define WIN_WIDTH  800                                  //window width
 #define WIN_HEIGHT 600                                  //window height
-#define PI         3.141529                             //constant
+#define PI         3.141529f                             //constant
 
 
 //global function declaration
@@ -32,6 +32,7 @@ bool gbActiveWindow = false;                             //render only if window
 HDC ghdc = NULL;                                         //current device context
 HGLRC ghrc = NULL;                                       //rendering context
 
+float numVertex = 3.0f;
 
 //WinMain() - entry point function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -164,6 +165,46 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
         case WM_KEYDOWN:
             switch(wParam)
             {
+                case 0x30:
+                    numVertex = 3.0f;
+                    break;
+                
+                case 0x31:
+                    numVertex = 4.0f;
+                    break;
+
+                case 0x32:
+                    numVertex = 5.0f;
+                    break;
+                
+                case 0x33:
+                    numVertex = 6.0f;
+                    break;
+
+                case 0x34:
+                    numVertex = 7.0f;
+                    break;
+
+                case 0x35:
+                    numVertex = 8.0f;
+                    break;
+
+                case 0x36:
+                    numVertex = 9.0f;
+                    break;
+                
+                case 0x37:
+                    numVertex = 10.0f;
+                    break;
+
+                case 0x38:
+                    numVertex = 11.0f;
+                    break;
+            
+                case 0x39:
+                    numVertex = 30.0f;
+                    break;
+
                 case VK_ESCAPE:
                     DestroyWindow(hwnd);
                     break;
@@ -377,8 +418,8 @@ void Display(void)
     //circle using line loop
     glColor3f(1.0f, 1.0f, 0.0f);
     glBegin(GL_LINE_LOOP);
-        for(fAngle = 0.0f; fAngle <= PI * 2; fAngle = fAngle + 0.1f)
-        {
+        for(fAngle = 0.0f; fAngle <= PI * 2.0f; fAngle += (PI * 2.0f) / numVertex)
+        { 
             x = radius * sin(fAngle);
             y = radius * cos(fAngle);
         
