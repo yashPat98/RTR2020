@@ -326,9 +326,15 @@ void Resize(int width, int height)
 //Display() - renders scene
 void Display(void)
 {
+    //function declaration
+    float distance(float x1, float y1, float x2, float y2);
+
     //variable declaration
     GLfloat fStep, x, y;
     GLfloat fInterval = 0.05f;
+
+    float lab, lbc, lac, sum;
+    float xin, yin, semi, radius;
 
     //code
     glClear(GL_COLOR_BUFFER_BIT);
@@ -397,15 +403,29 @@ void Display(void)
     //triangle
     //45 degrees = 0.785375 radians
     glBegin(GL_LINE_LOOP);
-        glVertex3f(0.0f, (cos(0.785375f) - cos(PI - 0.785375f)) / 2, 0.0f);
+        glVertex3f(0.0f, (cos(0.785375f) - cos(PI - 0.785375f)) / 2.0f, 0.0f);
         glVertex3f(-cos(0.785375f), -sin(0.785375f), 0.0f);
         glVertex3f(sin(PI - 0.785375f), cos(PI - 0.785375f), 0.0f); 
     glEnd();
 
-    //incircle
-    float radius = 0.43f;
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
 
-    glTranslatef(0.0f, -0.27f, 0.0f);
+    //incircle
+    lab = distance(0.0f, (cos(0.785375f) - cos(PI - 0.785375f)) / 2.0f, -cos(0.785375f), -sin(0.785375f));
+    lbc = distance(-cos(0.785375f), -sin(0.785375f), sin(PI - 0.785375f), cos(PI - 0.785375f));
+    lac = distance(0.0f, (cos(0.785375f) - cos(PI - 0.785375f)) / 2.0f, sin(PI - 0.785375f), cos(PI - 0.785375f));
+    sum = lab + lbc + lac;
+
+    xin = ((lbc * 0.0f) + (lac * (-cos(0.785375f))) + (lab * sin(PI - 0.785375f))) / sum;
+    yin = ((lbc * ((cos(0.785375f) - cos(PI - 0.785375f)) / 2.0f)) + (lac * (-sin(0.785375f))) + (lab * cos(PI - 0.785375f))) / sum;
+
+    //translate to incentre
+    glTranslatef(xin, yin, -2.5f);
+
+    //radius of incircle = area / semi-perimeter;
+    semi = (lab + lbc + lac) / 2;
+    radius = sqrt(semi * (semi - lab) * (semi - lbc) * (semi - lac)) / semi;
 
     glBegin(GL_LINE_LOOP);
         for(float angle = 0.0f; angle <= (2 * PI); angle += 0.1f)
@@ -418,6 +438,14 @@ void Display(void)
     glEnd();
 
     SwapBuffers(ghdc);
+}
+
+
+float distance(float x1, float y1, float x2, float y2)
+{
+    //code
+    float result = ((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1));
+    return ((float)sqrt(result));
 }
 
 

@@ -325,6 +325,9 @@ void Resize(int width, int height)
 //Display() - renders scene
 void Display(void)
 {
+    //function declaration
+    float distance(float x1, float y1, float x2, float y2);
+
     //variable declaration
     float x, y, fAngle, radius;
     float step = 0.0004f;
@@ -343,6 +346,9 @@ void Display(void)
     bool cloak = true;
     bool wand = false;
     bool stone = false;
+
+    float lab, lbc, lac, sum;
+    float xin, yin, semi;
 
     //code
     glClear(GL_COLOR_BUFFER_BIT);
@@ -374,13 +380,22 @@ void Display(void)
     //resurrection stone
     if(stone)
     {
-        //trnslate to center of incircle
-        glTranslatef(Tsx, Tsy - 0.19f, -3.0f);
+        lab = distance(0.0f, 1.0f, -1.0f, -1.0f);
+        lbc = distance(-1.0f, -1.0f, 1.0f, -1.0f);
+        lac = distance(0.0f, 1.0f, 1.0f, -1.0f);
+        sum = lab + lbc + lac;
+
+        xin = ((lbc * 0.0f) + (lac * (-1.0f)) + (lab * 1.0f)) / sum;
+        yin = ((lbc * 1.0f) + (lac * (-1.0f)) + (lab * (-1.0f))) / sum;
+
+        //translate to incentre
+        glTranslatef(Tsx, Tsy, -3.0f);
         glRotatef(sRot, 0.0f, 1.0f, 0.0f);
         glScalef(0.5f, 0.5f, 0.5f);
         
         //radius of incircle = area / semi-perimeter;
-        radius = 2.0f / 3.236f;
+        semi = (lab + lbc + lac) / 2;
+        radius = sqrt(semi * (semi - lab) * (semi - lbc) * (semi - lac)) / semi;
         
         glBegin(GL_LINE_LOOP);
             for(fAngle = 0.0f; fAngle < 2 * PI; fAngle = fAngle + 0.05f)
@@ -388,7 +403,7 @@ void Display(void)
                 x = radius * sin(fAngle);
                 y = radius * cos(fAngle);
 
-                glVertex3f(x, y, 0.0f);
+                glVertex3f(xin + x, yin + y, 0.0f);
             }
         glEnd();
 
@@ -447,6 +462,12 @@ void Display(void)
     SwapBuffers(ghdc);
 }
 
+float distance(float x1, float y1, float x2, float y2)
+{
+    //code
+    float result = ((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1));
+    return ((float)sqrt(result));
+}
 
 //UnInitialize()
 void UnInitialize(void)

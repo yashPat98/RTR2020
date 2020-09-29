@@ -325,8 +325,13 @@ void Resize(int width, int height)
 //Display() - renders scene
 void Display(void)
 {
+    //function declaration
+    float distance(float x1, float y1, float x2, float y2);
+
     //variable declaration
     float x, y, fAngle, radius;
+    float lab, lbc, lac, sum;
+    float xin, yin, semi;
 
     //code
     glClear(GL_COLOR_BUFFER_BIT);
@@ -340,9 +345,9 @@ void Display(void)
 
     //invisibility cloak
     glBegin(GL_LINE_LOOP);
-        glVertex3f(0.0f, 1.0f, 0.0f);
-        glVertex3f(-1.0f, -1.0f, 0.0f);
-        glVertex3f(1.0f, -1.0f, 0.0f);
+        glVertex3f(0.0f, 1.0f, 0.0f);       //A
+        glVertex3f(-1.0f, -1.0f, 0.0f);     //B
+        glVertex3f(1.0f, -1.0f, 0.0f);      //C
     glEnd();
 
     //elder wand
@@ -351,11 +356,21 @@ void Display(void)
         glVertex3f(0.0f, -1.0f, 0.0f);
     glEnd();
 
-    //trnslate to center of incircle
-    glTranslatef(0.0f, -0.38f, 0.0f);
+    //incircle
+    lab = distance(0.0f, 1.0f, -1.0f, -1.0f);
+    lbc = distance(-1.0f, -1.0f, 1.0f, -1.0f);
+    lac = distance(0.0f, 1.0f, 1.0f, -1.0f);
+    sum = lab + lbc + lac;
+
+    xin = ((lbc * 0.0f) + (lac * (-1.0f)) + (lab * 1.0f)) / sum;
+    yin = ((lbc * 1.0f) + (lac * (-1.0f)) + (lab * (-1.0f))) / sum;
+
+    //translate to incentre
+    glTranslatef(xin, yin, 0.0f);
 
     //radius of incircle = area / semi-perimeter;
-    radius = 2.0f / 3.236f;
+    semi = (lab + lbc + lac) / 2;
+    radius = sqrt(semi * (semi - lab) * (semi - lbc) * (semi - lac)) / semi;
 
     //resurrection stone
     glBegin(GL_LINE_LOOP);
@@ -369,6 +384,14 @@ void Display(void)
     glEnd();
 
     SwapBuffers(ghdc);
+}
+
+
+float distance(float x1, float y1, float x2, float y2)
+{
+    //code
+    float result = ((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1));
+    return ((float)sqrt(result));
 }
 
 
