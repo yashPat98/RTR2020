@@ -952,8 +952,68 @@ void DrawJet(int jetNum)
         }
     glEnd();
 
+    //I
+    glTranslatef(1.0f, 0.5f, 0.0f);
+    glBegin(GL_QUADS);
+        //line
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glVertex3f(-0.05f, 0.1f, 0.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(0.15f, 0.0f, 0.0f);
+        glVertex3f(0.1f, 0.1f, 0.0f);
 
-    glTranslatef(-12.0f, 0.0f, 0.0f);
+        glVertex3f(0.15f, 0.0f, 0.0f);
+        glVertex3f(0.05f, 0.0f, 0.0f);
+        glVertex3f(0.05f, -0.7f, 0.0f);
+        glVertex3f(0.15f, -0.8f, 0.0f);
+    glEnd();
+
+    //A
+    glTranslatef(0.45f, 0.0f, 0.0f);
+    glBegin(GL_QUADS);
+        //left side
+        glVertex3f(-0.05f, 0.1f, 0.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(0.15f, 0.0f, 0.0f);
+        glVertex3f(0.1f, 0.1f, 0.0f);
+
+        glVertex3f(0.15f, 0.0f, 0.0f);
+        glVertex3f(0.05f, 0.0f, 0.0f);
+        glVertex3f(-0.15f, -0.7f, 0.0f);
+        glVertex3f(-0.05f, -0.8f, 0.0f);
+
+        //right side
+        glVertex3f(0.1f, 0.1f, 0.0f);
+        glVertex3f(0.1f, 0.0f, 0.0f);
+        glVertex3f(0.48f, -0.7f, 0.0f);
+        glVertex3f(0.6f, -0.8f, 0.0f);
+
+        //mid
+        glVertex3f(-0.12f, -0.3f, 0.0f);
+        glVertex3f(-0.07f, -0.4f, 0.0f);
+        glVertex3f(0.32f, -0.4f, 0.0f);
+        glVertex3f(0.27f, -0.3f, 0.0f);
+    glEnd();
+
+    glTranslatef(0.65f, 0.0f, 0.0f);
+    glBegin(GL_QUADS);
+        glVertex3f(-0.05f, 0.1f, 0.0f);
+        glVertex3f(0.0f, 0.0f, 0.0f);
+        glVertex3f(0.45f, 0.0f, 0.0f);
+        glVertex3f(0.40f, 0.1f, 0.0f);
+
+        glVertex3f(0.15f, 0.0f, 0.0f);
+        glVertex3f(0.05f, 0.0f, 0.0f);
+        glVertex3f(0.05f, -0.7f, 0.0f);
+        glVertex3f(0.15f, -0.8f, 0.0f);
+
+        glVertex3f(0.05f, -0.3f, 0.0f);
+        glVertex3f(0.05f, -0.4f, 0.0f);
+        glVertex3f(0.35f, -0.4f, 0.0f);
+        glVertex3f(0.31f, -0.3f, 0.0f);
+    glEnd();
+
+    glTranslatef(-13.11f, -0.5f, 0.0f);
     Smoke(jetNum);
 }
 
