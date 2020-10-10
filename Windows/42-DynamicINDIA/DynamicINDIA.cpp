@@ -15,7 +15,7 @@
 #define WIN_WIDTH     800                               //window width
 #define WIN_HEIGHT    600                               //window height
 
-#define MAX_PARTICLES 500                               //no of particles
+#define MAX_PARTICLES 1000                               //no of particles
 #define PI            3.141592f                         //constant
 
 

@@ -344,8 +344,10 @@ void Display(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
+    //cube
     glTranslatef(-3.0f,  0.0f, -10.0f);
     glRotatef(cRot, 1.0f, 1.0f, 1.0f);
+    glScalef(0.75f, 0.75f, 0.75f);
 
     glBegin(GL_QUADS);
         //near
@@ -394,6 +396,7 @@ void Display(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
+    //pyramid
     glTranslatef(3.0f,  0.0f, -10.0f);
     glRotatef(pRot, 0.0f, 1.0f, 0.0f);
 
