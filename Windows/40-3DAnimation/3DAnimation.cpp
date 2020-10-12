@@ -345,7 +345,7 @@ void Display(void)
     glLoadIdentity();
 
     //cube
-    glTranslatef(-3.0f,  0.0f, -10.0f);
+    glTranslatef(-2.0f,  0.0f, -6.0f);
     glRotatef(cRot, 1.0f, 1.0f, 1.0f);
     glScalef(0.75f, 0.75f, 0.75f);
 
@@ -397,7 +397,7 @@ void Display(void)
     glLoadIdentity();
 
     //pyramid
-    glTranslatef(3.0f,  0.0f, -10.0f);
+    glTranslatef(2.0f,  0.0f, -6.0f);
     glRotatef(pRot, 0.0f, 1.0f, 0.0f);
 
     glBegin(GL_TRIANGLES);
