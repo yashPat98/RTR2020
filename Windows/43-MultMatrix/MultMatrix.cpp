@@ -1,6 +1,6 @@
 // ------------------------
 // Name :        Yash Patel
-// Assignment :  Transformations using matrix
+// Assignment :  Transformations using matrics arrays 
 // Date :        12-10-2020
 // ------------------------
 
@@ -95,7 +95,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
     //create window
     hwnd = CreateWindowEx(WS_EX_APPWINDOW,
         szAppName,
-        TEXT("OpenGL : Matrix Transformations"),
+        TEXT("OpenGL : MultMatrix"),
         WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_VISIBLE,
         (cxScreen - WIN_WIDTH) / 2,
         (cyScreen - WIN_HEIGHT) / 2,
