@@ -15,9 +15,9 @@
 #define WIN_WIDTH     800                               //window width
 #define WIN_HEIGHT    600                               //window height
 
-#define MAX_PARTICLES 1000                               //no of particles
+#define MAX_PARTICLES 1000                              //no of particles
 #define PI            3.141592f                         //constant
-
+#define MAX_SIZE      379                               //no of pinits of silhouette
 
 //global function declaration
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -56,6 +56,388 @@ bool gbRenderJet = false;                                  //flag to start jet a
 bool gbRotation = true;                                    //flag to start smoke rendering
 bool gbHoverPlane = false;                                 //if plane hover on a draw mid 
 const float a = 0.008f;                                    //parabola constant y = a * x * x
+
+float finalPos[MAX_SIZE][2] = {                            //india map silhouette
+301,1013,
+296,1000,
+290,989,
+285,979,
+282,960,
+272,946,
+262,936,
+256,924,
+251,906,
+250,892,
+242,874,
+234,862,
+226,844,
+218,826,
+211,815,
+207,793,
+202,777,
+200,760,
+199,744,
+194,728,
+191,710,
+189,696,
+189,678,
+191,664,
+189,646,
+189,631,
+184,619,
+188,605,
+176,605,
+173,616,
+170,627,
+168,638,
+159,646,
+148,651,
+137,658,
+127,659,
+116,654,
+108,646,
+100,638,
+90,631,
+84,623,
+76,613,
+71,605,
+87,605,
+100,599,
+108,592,
+111,583,
+100,581,
+87,584,
+76,581,
+63,575,
+58,565,
+57,559,
+50,559,
+58,551,
+65,544,
+79,540,
+95,540,
+109,535,
+121,536,
+130,530,
+132,521,
+129,511,
+124,500,
+121,492,
+111,486,
+106,478,
+105,468,
+98,458,
+94,454,
+92,441,
+97,428,
+109,417,
+119,412,
+124,417,
+135,411,
+149,407,
+165,398,
+173,388,
+183,376,
+197,369,
+203,358,
+210,345,
+219,337,
+226,325,
+237,312,
+243,304,
+243,297,
+246,285,
+246,275,
+259,262,
+264,256,
+254,245,
+246,237,
+240,235,
+231,234,
+226,226,
+219,223,
+215,211,
+215,199,
+211,189,
+210,176,
+218,165,
+226,157,
+226,148,
+219,141,
+218,130,
+215,130,
+207,130,
+200,125,
+194,124,
+186,121,
+180,121,
+180,109,
+188,101,
+195,94,
+210,89,
+216,89,
+216,82,
+227,82,
+235,79,
+251,74,
+261,81,
+269,86,
+275,90,
+283,98,
+286,106,
+291,111,
+299,119,
+302,119,
+312,129,
+323,130,
+337,132,
+356,129,
+369,124,
+390,122,
+404,125,
+412,133,
+419,138,
+422,149,
+417,162,
+414,165,
+409,170,
+403,175,
+398,183,
+398,188,
+391,188,
+387,191,
+382,191,
+382,202,
+384,210,
+388,213,
+395,223,
+401,227,
+401,232,
+398,235,
+395,235,
+390,243,
+387,243,
+379,248,
+374,245,
+368,253,
+372,267,
+376,277,
+390,283,
+395,291,
+406,299,
+414,309,
+430,317,
+438,326,
+444,331,
+435,339,
+430,347,
+427,353,
+422,366,
+422,376,
+428,387,
+441,393,
+450,403,
+462,409,
+473,414,
+476,414,
+486,422,
+495,422,
+503,428,
+521,431,
+533,430,
+554,431,
+556,438,
+565,446,
+576,449,
+584,449,
+589,458,
+605,458,
+621,463,
+632,463,
+645,463,
+656,465,
+669,460,
+669,452,
+666,442,
+666,428,
+669,419,
+675,411,
+686,411,
+685,419,
+685,428,
+691,438,
+702,446,
+710,450,
+721,450,
+734,450,
+755,452,
+769,454,
+783,450,
+788,442,
+788,436,
+783,428,
+779,425,
+790,420,
+801,414,
+822,401,
+830,391,
+842,385,
+858,372,
+866,366,
+882,369,
+895,369,
+909,363,
+917,366,
+921,376,
+922,384,
+930,390,
+941,398,
+952,404,
+949,412,
+941,422,
+944,431,
+949,441,
+941,444,
+936,438,
+930,438,
+917,438,
+911,442,
+906,449,
+900,452,
+898,454,
+890,455,
+884,455,
+884,465,
+884,476,
+882,481,
+877,489,
+876,501,
+873,513,
+873,522,
+866,530,
+857,541,
+849,552,
+838,552,
+831,549,
+831,560,
+831,568,
+828,581,
+826,592,
+825,602,
+826,608,
+822,615,
+812,611,
+804,597,
+801,586,
+798,576,
+798,570,
+791,559,
+787,564,
+783,570,
+782,578,
+779,578,
+771,575,
+764,564,
+764,559,
+769,549,
+779,540,
+787,533,
+793,529,
+796,519,
+796,511,
+791,511,
+776,508,
+763,508,
+756,508,
+747,506,
+732,506,
+725,503,
+725,498,
+720,489,
+717,479,
+707,478,
+699,474,
+691,471,
+685,471,
+677,482,
+672,500,
+681,503,
+680,511,
+674,516,
+677,533,
+680,544,
+683,552,
+683,570,
+688,576,
+691,592,
+694,602,
+699,611,
+699,619,
+696,624,
+685,629,
+675,626,
+670,621,
+664,621,
+656,631,
+646,634,
+640,638,
+631,642,
+631,646,
+629,661,
+627,667,
+615,681,
+605,688,
+595,693,
+587,696,
+573,702,
+562,715,
+554,723,
+543,739,
+529,750,
+517,760,
+505,768,
+497,774,
+487,779,
+486,791,
+481,799,
+473,796,
+468,799,
+457,799,
+449,809,
+447,819,
+441,820,
+435,819,
+430,823,
+423,825,
+419,841,
+419,857,
+417,881,
+415,892,
+420,906,
+417,917,
+411,932,
+406,949,
+406,960,
+407,975,
+411,983,
+407,997,
+396,994,
+393,997,
+390,1008,
+384,1016,
+382,1024,
+385,1038,
+374,1038,
+372,1038,
+360,1043,
+356,1051,
+348,1062,
+337,1064,
+325,1058,
+312,1046,
+301,1035,
+299,1024
+};
 
 
 //WinMain() - entry point function
@@ -163,7 +545,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
     return ((int)msg.wParam);
 }
 
-
 //WndProc() - callback function
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -224,7 +605,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
     return (DefWindowProc(hwnd, iMsg, wParam, lParam));
 }
 
-
 //ToggleFullscreen() - toggle fullscreen
 void ToggleFullscreen(void)
 {
@@ -270,7 +650,6 @@ void ToggleFullscreen(void)
     }
     
 }
-
 
 //Initialize() - initializes rendering context
 void Initialize(void)
@@ -364,8 +743,14 @@ void Initialize(void)
 
         particles[loop].xi = (float)(rand() % 100) / 2000.0f + 0.05f;
     }
-}
 
+    //scaling silhouette points 
+    for(int i = 0; i < MAX_SIZE; i++)
+    {
+        finalPos[i][0] *= 0.001f;
+        finalPos[i][1] *= -0.001f;
+    }
+}
 
 //Resize() 
 void Resize(int width, int height)
@@ -382,13 +767,13 @@ void Resize(int width, int height)
     gluPerspective(45.0f, (GLfloat)width / (GLfloat)height, 0.1f, 100.0f);
 }
 
-
 //Display() - renders scene
 void Display(void)
 {
     //function declaration
     void DrawIndia(void);
     void DrawJet(int jetNum);
+    void DrawSilhouette(void);
 
     //variable declaration
     static bool bRender = false;
@@ -402,6 +787,8 @@ void Display(void)
 
     //code
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    DrawSilhouette();
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -466,7 +853,7 @@ void Display(void)
             gbRotation = true;
             step = -step;
         }
-        
+
         xParabola += 0.1f;
     }
 
@@ -1082,6 +1469,43 @@ void Smoke(int jetNum)
     }
 }
 
+void DrawSilhouette(void)
+{
+    //variable declaration
+    static int renderPoints = 0;
+    static int count = 0;
+    static GLenum ePrimitive = GL_POINTS;
+
+    //code
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    
+    glTranslatef(-0.5f, 0.53f, -1.4f);
+    glPointSize(2.0f);
+
+    glBegin(ePrimitive);
+        int temp = renderPoints;
+
+        glColor3f(1.0f, 1.0f, 1.0f);
+        for(int i = 0; (i < MAX_SIZE) && (temp != 0); i++, temp--)
+        {
+            glVertex3f(finalPos[i][0], finalPos[i][1], 0.0f);
+        }
+    glEnd();
+
+    //update
+    if(count != 10)
+        count++;
+    else
+    {
+        renderPoints++;
+        count = 0;
+    }
+
+    if(renderPoints == 379)
+        ePrimitive = GL_LINE_LOOP;
+
+}
 
 //UnInitialize()
 void UnInitialize(void)
