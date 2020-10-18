@@ -1,7 +1,7 @@
 // ------------------------
 // Name :        Yash Patel
-// Assignment :  Solar system using push/pop matrix
-// Date :        17-10-2020
+// Assignment :  Transformations using matrics arrays 
+// Date :        12-10-2020
 // ------------------------
 
 // --- Headers ---
@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <gl/gl.h>
 #include <gl/GLU.h>
-#include "RESOURCES.h"
+#include "RoboticArm.h"
 
 #pragma comment(lib, "OpenGL32.lib")
 #pragma comment(lib, "glu32.lib")
@@ -22,20 +22,21 @@
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);    //callback function
 
 // --- Global Variables ---
+FILE *gpFile = NULL;                                     //log file
+
+bool gbFullscreen = false;                               //toggling fullscreen
+HWND ghwnd = NULL;                                       //global hwnd
 DWORD dwStyle;                                           //window style
-FILE *gpFile            = NULL;                          //log file
-HWND ghwnd              = NULL;                          //global hwnd
-HDC ghdc                = NULL;                          //current device context
-HGLRC ghrc              = NULL;                          //rendering context
-WINDOWPLACEMENT wpPrev  = { sizeof(WINDOWPLACEMENT) };   //window placement before fullscreen
+WINDOWPLACEMENT wpPrev = { sizeof(WINDOWPLACEMENT) };    //window placement before fullscreen
 
-bool gbFullscreen       = false;                         //toggling fullscreen
-bool gbActiveWindow     = false;                         //render only if window is active
+bool gbActiveWindow = false;                             //render only if window is active
+HDC ghdc = NULL;                                         //current device context
+HGLRC ghrc = NULL;                                       //rendering context
 
-int day = 0;                                             //rotation angle of earth
-int year = 0;                                            //revolution angle of earth
+int shoulder = 0;
+int elbow = 0;
 
-GLUquadric *quadric = NULL;                              
+GLUquadric *quadric = NULL;
 
 
 // --- WinMain() - entry point function ---
@@ -168,25 +169,25 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
         case WM_CHAR:
             switch(wParam)
             {
-                case 'D':
-                    day = (day + 6) % 360;
+                case 'S':
+                    shoulder = (shoulder + 3) % 360;
                     break;
 
-                case 'd':
-                    day = (day - 6) % 360;
+                case 's':
+                    shoulder = (shoulder - 3) % 360;
                     break;
 
-                case 'Y':
-                    year = (year + 3) % 360;
+                case 'E':
+                    elbow = (elbow + 3) % 360;
                     break;
-                
-                case 'y':
-                    year = (year - 3) % 360;
+
+                case 'e':
+                    elbow = (elbow - 3) % 360;
                     break;
-                
+ 
                 default:
                     break;
-            } 
+            }
             break;
 
         case WM_KEYDOWN:
@@ -365,31 +366,34 @@ void Display(void)
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+   
+    glTranslatef(0.0f, 0.0f, -10.0f);
 
-    //camera - (eye, center, up)
-    gluLookAt(0.0f, 0.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+    glPushMatrix();                                         //save the matrix state
+        glRotatef((GLfloat)shoulder, 0.0f, 0.0f, 1.0f);     //shoulder rotation
+        glTranslatef(1.0f, 0.0f, 0.0f);                     //translate to center of shoulder
 
-    //sun
-    glPushMatrix();                                    //save the matrix state   
-        glRotatef(90.0f, 1.0f, 0.0f, 0.0f);            //adjust poles vertically     
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);     //draw filled shapes
-        glColor3f(1.0f, 1.0f, 0.0f);                   //yellow color for sun
-        quadric = gluNewQuadric();                     //create new quadric object
-        gluSphere(quadric, 0.75f, 30, 30);             //draw sun
-    glPopMatrix();                                     //reset the matrix state
+        glPushMatrix();                                     //save matrix state
+            glScalef(2.0f, 0.5f, 1.0f);                     //for oval shape
 
-    //earth
-    glPushMatrix();                                    //save the matrix state
-        glRotatef((GLfloat)year, 0.0f, 1.0f, 0.0f);    //revolution angle
-        glTranslatef(1.0f, 0.0f, 0.0f);                //radius of revolution
-        glRotatef(90.0f, 1.0f, 0.0f, 0.0f);            //adjust poles vertically
-        glRotatef((GLfloat)day, 0.0f, 0.0f, 1.0f);     //rotation angle
+            glColor3f(0.5f, 0.35f, 0.05f);
+            quadric = gluNewQuadric();
+            gluSphere(quadric, 0.5f, 10, 10);               //draw shoulder
+        glPopMatrix();                                      //reset matrix state to center of shoulder
 
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);     //draw wireframe shapes
-        glColor3f(0.0f, 1.0f, 1.0f);                   //cyan color for earth
-        quadric = gluNewQuadric();                     //create new quadric object
-        gluSphere(quadric, 0.2f, 20, 20);              //draw earth
-    glPopMatrix();                                     //reset the matrix state
+        glTranslatef(1.0f, 0.0f, 0.0f);                     //translate to joint
+        glRotatef((GLfloat)elbow, 0.0f, 0.0f, 1.0f);        //elbow rotation
+        glTranslatef(1.0f, 0.0f, 0.0f);                     //translate to center of elbow
+
+        glPushMatrix();                                     //save matrix state
+            glScalef(2.0f, 0.5f, 1.0f);                     //for oval shape
+
+            glColor3f(0.5f, 0.35f, 0.05f);
+            quadric = gluNewQuadric();
+            gluSphere(quadric, 0.5f, 10, 10);               //draw elbow
+        glPopMatrix();                                      //reset matrix state back to center of elbow
+    
+    glPopMatrix();                                          //reset matrix state back to initial state
 
     SwapBuffers(ghdc);
 }
