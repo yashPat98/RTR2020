@@ -381,7 +381,7 @@ void Display(void)
     //earth
     glPushMatrix();                                    //save the matrix state
         glRotatef((GLfloat)year, 0.0f, 1.0f, 0.0f);    //revolution angle
-        glTranslatef(1.0f, 0.0f, 0.0f);                //radius of revolution
+        glTranslatef(1.5f, 0.0f, 0.0f);                //radius of revolution
         glRotatef(90.0f, 1.0f, 0.0f, 0.0f);            //adjust poles vertically
         glRotatef((GLfloat)day, 0.0f, 0.0f, 1.0f);     //rotation angle
 
@@ -389,6 +389,16 @@ void Display(void)
         glColor3f(0.0f, 1.0f, 1.0f);                   //cyan color for earth
         quadric = gluNewQuadric();                     //create new quadric object
         gluSphere(quadric, 0.2f, 20, 20);              //draw earth
+
+        //moon
+        glPushMatrix();                                //save the matrix state
+            glRotatef((GLfloat)day, 0.0f, 0.0f, 1.0f); //revolution of moon
+            glTranslatef(0.4f, 0.0f, 0.0f);            //radius of revolution
+
+            quadric = gluNewQuadric();                 //create new quadric object
+            gluSphere(quadric, 0.1f, 20, 20);          //draw moon
+        glPopMatrix();                                 //reset the matrix state
+
     glPopMatrix();                                     //reset the matrix state
 
     SwapBuffers(ghdc);
