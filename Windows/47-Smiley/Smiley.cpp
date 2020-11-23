@@ -196,7 +196,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
                     break;
 
                 default:
-                    //pressed_key = 0;
                     glDisable(GL_TEXTURE_2D);
                     break;
             }
