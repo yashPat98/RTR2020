@@ -1,6 +1,6 @@
 // ------------------------
 // Name :        Yash Patel
-// Assignment :  Twaeked Smiley Assignment
+// Assignment :  Checkerboard Assignment
 // Date :        23-11-2020
 // ------------------------
 
@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <gl/gl.h>
 #include <gl/GLU.h>
-#include "Smiley.h"
+#include "Checkerboard.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -20,6 +20,9 @@
 // --- Macros ---
 #define WIN_WIDTH  800                                   //window width
 #define WIN_HEIGHT 600                                   //window height
+
+#define CHECK_IMAGE_WIDTH  64
+#define CHECK_IMAGE_HEIGHT 64
 
 // --- Global Function Declaration ---
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);    //callback function
@@ -35,8 +38,8 @@ WINDOWPLACEMENT wpPrev  = { sizeof(WINDOWPLACEMENT) };   //window placement befo
 bool gbFullscreen       = false;                         //toggling fullscreen
 bool gbActiveWindow     = false;                         //render only if window is active
 
-GLuint smiley_texture;
-unsigned int pressed_key;
+GLubyte checkImage[CHECK_IMAGE_HEIGHT][CHECK_IMAGE_WIDTH][4];
+GLuint checker_texture;
 
 // --- WinMain() - entry point function ---
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -88,7 +91,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
     //create window
     hwnd = CreateWindowEx(WS_EX_APPWINDOW,
         szAppName,
-        TEXT("OpenGL : Tweaked Smiley"),
+        TEXT("OpenGL : Checkerboard"),
         WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_VISIBLE,
         (cxScreen - WIN_WIDTH) / 2,
         (cyScreen - WIN_HEIGHT) / 2,
@@ -174,29 +177,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
                 case 0x66:
                     ToggleFullscreen();
                     break;
-                
-                case 49:
-                    pressed_key = 1;
-                    glEnable(GL_TEXTURE_2D);
-                    break;
-                
-                case 50:
-                    pressed_key = 2;
-                    glEnable(GL_TEXTURE_2D);
-                    break;
-                
-                case 51:
-                    pressed_key = 3;
-                    glEnable(GL_TEXTURE_2D);
-                    break;
-                
-                case 52:
-                    pressed_key = 4;
-                    glEnable(GL_TEXTURE_2D);
-                    break;
 
                 default:
-                    glDisable(GL_TEXTURE_2D);
                     break;
             }
             break;
@@ -268,7 +250,7 @@ void Initialize(void)
 {
     //function prototypes
     void Resize(int, int);
-    bool loadGLTexture(GLuint *texture, TCHAR ResourceID[]);
+    void loadGLTexture(void);
 
     //variable declaration
     PIXELFORMATDESCRIPTOR pfd;
@@ -334,43 +316,62 @@ void Initialize(void)
     glShadeModel(GL_SMOOTH);
 
     //load smiley texture
-    loadGLTexture(&smiley_texture, MAKEINTRESOURCE(SMILEY_BITMAP));
+    loadGLTexture();
+
+    //enable texture memory
+    glEnable(GL_TEXTURE_2D);
 
     //warm-up call to Resize()
     Resize(WIN_WIDTH, WIN_HEIGHT);
 }
 
 // --- loadGLtexture() - loads texture from resource file
-bool loadGLTexture(GLuint *texture, TCHAR ResourceID[])
+void loadGLTexture(void)
 {
-    //variable declaration
-    bool bResult = false;
-    HBITMAP hBitmap = NULL;
-    BITMAP bmp;
+    //function declaration
+    void MakeCheckImage(void);
 
     //code
-    hBitmap = (HBITMAP)LoadImage(GetModuleHandle(NULL), ResourceID, IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-    if(hBitmap)
+    MakeCheckImage();
+
+    //generate texture object 
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glGenTextures(1, &checker_texture);
+    glBindTexture(GL_TEXTURE_2D, checker_texture);
+
+    //set up texture parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    //push the data to texture memory
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CHECK_IMAGE_WIDTH, CHECK_IMAGE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, checkImage);
+
+    //set texture environment parameter
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+}
+
+// --- MakeCheckImage() - generate procedural texture ---
+void MakeCheckImage(void)
+{
+    //variable declaration
+    int i, j, c;
+
+    //code
+    for(i = 0; i < CHECK_IMAGE_HEIGHT; i++)
     {
-        bResult = true;
-        GetObject(hBitmap, sizeof(BITMAP), &bmp);
-
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-        glGenTextures(1, texture);
-        glBindTexture(GL_TEXTURE_2D, *texture);
-
-        //set up texture parameters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-
-        //push the data to texture memory
-        gluBuild2DMipmaps(GL_TEXTURE_2D, 3, bmp.bmWidth, bmp.bmHeight, GL_BGR_EXT, GL_UNSIGNED_BYTE, bmp.bmBits);
-
-        DeleteObject(hBitmap);
-        hBitmap = NULL;
+        for(j = 0; j < CHECK_IMAGE_WIDTH; j++)
+        {
+            c = (((i & 0x8) == 0) ^ ((j & 0x8) == 0)) * 255;
+            
+            checkImage[i][j][0] = (GLubyte)c;
+            checkImage[i][j][1] = (GLubyte)c;
+            checkImage[i][j][2] = (GLubyte)c;
+            checkImage[i][j][3] = (GLubyte)255;
+        }
     }
 
-    return (bResult);
 }
 
 // --- Resize() --- 
@@ -385,111 +386,47 @@ void Resize(int width, int height)
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
-    gluPerspective(45.0f, (GLfloat)width / (GLfloat)height, 0.1f, 100.0f);
+    gluPerspective(60.0f, (GLfloat)width / (GLfloat)height, 0.1f, 30.0f);
 }
 
 // --- Display() - renders scene ---
 void Display(void)
 {
-    //variable declaration
-
     //code
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     
-    gluLookAt(0.0f, 0.0f, 3.0f,
-              0.0f, 0.0f, 0.0f,
-              0.0f, 1.0f, 0.0f);
+    glTranslatef(0.0f, 0.0f, -3.6f);
 
-    switch(pressed_key)
-    {
-        case 1:
-            {
-                glBegin(GL_QUADS);
-                    glTexCoord2f(1.0f, 1.0f);
-                    glVertex3f(1.0f, 1.0f, 0.0f);
+    glBindTexture(GL_TEXTURE_2D, checker_texture);
 
-                    glTexCoord2f(0.0f, 1.0f);
-                    glVertex3f(-1.0f, 1.0f, 0.0f);
+    glBegin(GL_QUADS);
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex3f(-2.0f, -1.0f, 0.0f);
 
-                    glTexCoord2f(0.0f, 0.0f);
-                    glVertex3f(-1.0f, -1.0f, 0.0f);
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex3f(-2.0f, 1.0f, 0.0f);
 
-                    glTexCoord2f(1.0f, 0.0f);
-                    glVertex3f(1.0f, -1.0f, 0.0f);   
-                glEnd();
-            }
-            break;
-        
-        case 2:
-            {
-                glBegin(GL_QUADS);
-                    glTexCoord2f(0.5f, 0.5f);
-                    glVertex3f(1.0f, 1.0f, 0.0f);
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex3f(0.0f, 1.0f, 0.0f);
 
-                    glTexCoord2f(0.0f, 0.5f);
-                    glVertex3f(-1.0f, 1.0f, 0.0f);
+        glTexCoord2f(1.0f, 0.0f);
+        glVertex3f(0.0f, -1.0f, 0.0f);
 
-                    glTexCoord2f(0.0f, 0.0f);
-                    glVertex3f(-1.0f, -1.0f, 0.0f);
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex3f(1.0f, -1.0f, 0.0f);
 
-                    glTexCoord2f(0.5f, 0.0f);
-                    glVertex3f(1.0f, -1.0f, 0.0f);   
-                glEnd();
-            }
-            break;
-        
-        case 3:
-            {
-                glBegin(GL_QUADS);
-                    glTexCoord2f(2.0f, 2.0f);
-                    glVertex3f(1.0f, 1.0f, 0.0f);
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex3f(1.0f, 1.0f, 0.0f);
 
-                    glTexCoord2f(0.0f, 2.0f);
-                    glVertex3f(-1.0f, 1.0f, 0.0f);
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex3f(2.41421, 1.0f, -1.41421);
 
-                    glTexCoord2f(0.0f, 0.0f);
-                    glVertex3f(-1.0f, -1.0f, 0.0f);
-
-                    glTexCoord2f(2.0f, 0.0f);
-                    glVertex3f(1.0f, -1.0f, 0.0f);   
-                glEnd();
-            }
-            break;
-        
-        case 4:
-            {
-                glBegin(GL_QUADS);
-                    glTexCoord2f(0.5f, 0.5f);
-                    glVertex3f(1.0f, 1.0f, 0.0f);
-
-                    glTexCoord2f(0.5f, 0.5f);
-                    glVertex3f(-1.0f, 1.0f, 0.0f);
-
-                    glTexCoord2f(0.5f, 0.5f);
-                    glVertex3f(-1.0f, -1.0f, 0.0f);
-
-                    glTexCoord2f(0.5f, 0.5f);
-                    glVertex3f(1.0f, -1.0f, 0.0f);   
-                glEnd();
-            }
-            break;
-
-        default:
-            {
-                glBegin(GL_QUADS);
-                    glColor3f(1.0f, 1.0f, 1.0f);
-                    glVertex3f(1.0f, 1.0f, 0.0f);
-                    glVertex3f(-1.0f, 1.0f, 0.0f);
-                    glVertex3f(-1.0f, -1.0f, 0.0f);
-                    glVertex3f(1.0f, -1.0f, 0.0f);   
-                glEnd();
-            }
-            break;
-    }
-
+        glTexCoord2f(1.0f, 0.0f);
+        glVertex3f(2.41421, -1.0f, -1.41421);
+    glEnd();
 
     SwapBuffers(ghdc);
 }
@@ -514,8 +451,8 @@ void UnInitialize(void)
         ShowCursor(true);
     }
 
-    //delete texture memory
-    glDeleteTextures(1, &smiley_texture);
+    glDisable(GL_TEXTURE_2D);
+    glDeleteTextures(1, &checker_texture);
 
     if(wglGetCurrentContext() == ghrc)
     {
