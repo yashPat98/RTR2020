@@ -1,7 +1,7 @@
 // ------------------------
 // Name :        Yash Patel
-// Assignment :  Header file based model loading
-// Date :        13-12-2020
+// Assignment :  Basic Shapes Assignment 
+// Date :        25-12-2020
 // ------------------------
 
 // --- Headers ---
@@ -9,8 +9,7 @@
 #include <stdio.h>
 #include <gl/gl.h>
 #include <gl/GLU.h>
-#include "Model.h"
-#include "Teapot.h"
+#include "Shapes.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -36,22 +35,6 @@ WINDOWPLACEMENT wpPrev  = { sizeof(WINDOWPLACEMENT) };   //window placement befo
 bool gbFullscreen       = false;                         //toggling fullscreen
 bool gbActiveWindow     = false;                         //render only if window is active
 
-bool gbTexture          = false;                         //toggling texture 
-bool gbLight            = false;                         //toggling lighting
-bool gbAnimate          = false;
-
-GLuint teapot_texture;
-GLfloat angle;
-
-GLfloat lightAmbient[4]      = {0.0f, 0.0f, 0.0f, 1.0f};
-GLfloat lightDiffuse[4]      = {1.0f, 1.0f, 1.0f, 1.0f};
-GLfloat lightSpecular[4]     = {1.0f, 1.0f, 1.0f, 1.0f};
-GLfloat lightPosition[4]     = {100.0f, 100.0f, 100.0f, 1.0f};
-
-GLfloat materialAmbient[4]   = {0.0f, 0.0f, 0.0f, 1.0f};
-GLfloat materialDiffuse[4]   = {1.0f, 1.0f, 1.0f, 1.0f};
-GLfloat materialSpecular[4]  = {1.0f, 1.0f, 1.0f, 1.0f};
-GLfloat materialShininess    = 128.0f;
 
 // --- WinMain() - entry point function ---
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -103,7 +86,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
     //create window
     hwnd = CreateWindowEx(WS_EX_APPWINDOW,
         szAppName,
-        TEXT("OpenGL : Teapot"),
+        TEXT("OpenGL : Basic Shapes"),
         WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_VISIBLE,
         (cxScreen - WIN_WIDTH) / 2,
         (cyScreen - WIN_HEIGHT) / 2,
@@ -175,61 +158,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
         case WM_SIZE:
             Resize(LOWORD(lParam), HIWORD(lParam));
-            break;
-
-        case WM_CHAR:
-            switch(wParam)
-            {
-                case 'a':
-                    //fall through
-                case 'A':
-                    if(gbAnimate == false)
-                    {
-                        gbAnimate = true;
-                    }
-                    else
-                    {
-                        gbAnimate = false;
-                    }
-                    break;
-
-                case 't':
-                    //fall through
-                case 'T':
-                    if(gbTexture == false)
-                    {
-                        //enable texture memory
-                        glEnable(GL_TEXTURE_2D);
-                        gbTexture = true;
-                    }
-                    else
-                    {
-                        //disable texture memory
-                        glDisable(GL_TEXTURE_2D);
-                        gbTexture = false;
-                    }
-                    break;
-                    
-                case 'l':
-                    //fall through
-                case 'L':
-                    if(gbLight == false)
-                    {
-                        //enable lighting
-                        glEnable(GL_LIGHTING);
-                        gbLight = true;
-                    }
-                    else
-                    {
-                        //disable lighting
-                        glDisable(GL_LIGHTING);
-                        gbLight = false;
-                    }
-                    break;
-
-                default:
-                    break;
-            }
             break;
 
         case WM_KEYDOWN:
@@ -317,7 +245,6 @@ void Initialize(void)
 {
     //function prototypes
     void Resize(int, int);
-    bool loadGLTexture(GLuint *texture, TCHAR ResourceID[]);
 
     //variable declaration
     PIXELFORMATDESCRIPTOR pfd;
@@ -382,59 +309,8 @@ void Initialize(void)
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
-    //load marble texture
-    loadGLTexture(&teapot_texture, MAKEINTRESOURCE(MARBLE_BITMAP));
-
-    //set up light 0
-    glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmbient);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, lightSpecular);
-    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
-    glEnable(GL_LIGHT0);
-
-    //set up material properties
-    glMaterialfv(GL_FRONT, GL_AMBIENT, materialAmbient);
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, materialDiffuse);
-    glMaterialfv(GL_FRONT, GL_SPECULAR, materialSpecular);
-    glMaterialf(GL_FRONT, GL_SHININESS, materialShininess);
-
     //warm-up call to Resize()
     Resize(WIN_WIDTH, WIN_HEIGHT);
-}
-
-// --- loadGLTexture() - loads texture form resource file ---
-bool loadGLTexture(GLuint *texture, TCHAR ResourceID[])
-{
-    //variable declaration
-    bool bResult = false;
-    HBITMAP hBitmap = NULL;
-    BITMAP bmp;
-
-    //code
-    hBitmap = (HBITMAP)LoadImage(GetModuleHandle(NULL), ResourceID, IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION);
-    if(hBitmap)
-    {
-        bResult = true;
-        GetObject(hBitmap, sizeof(BITMAP), &bmp);
-
-        //generate texture object
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-        glGenTextures(1, texture);
-        glBindTexture(GL_TEXTURE_2D, *texture);
-
-        //set up texture parameters
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-
-        //push the data to texture memory
-        gluBuild2DMipmaps(GL_TEXTURE_2D, 3, bmp.bmWidth, bmp.bmHeight, GL_BGR_EXT, GL_UNSIGNED_BYTE, bmp.bmBits);
-
-        //free bitmap handle
-        DeleteObject(hBitmap);
-        hBitmap = NULL;
-    }
-
-    return (bResult);
 }
 
 // --- Resize() --- 
@@ -455,40 +331,171 @@ void Resize(int width, int height)
 // --- Display() - renders scene ---
 void Display(void)
 {
+    //variable declaration 
+    GLfloat i, j;
+    int k = 0;
+
     //code
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(0.0f, 0.0f, -1.0f);
-    glRotatef(angle, 0.0f, 1.0f, 0.0f);
+    gluLookAt(0.0f, 0.0f, 1.5f,
+              0.0f, 0.0f, 0.0f, 
+              0.0f, 1.0f, 0.0f);
 
-    glBindTexture(GL_TEXTURE_2D, teapot_texture);
+    //1st shape
+    glPushMatrix();          
+        glTranslatef(-0.5f, 0.3f, 0.0f);
 
-    glBegin(GL_TRIANGLES);
-        for(int i = 0; i < sizeof(face_indicies) / sizeof(face_indicies[0]); i++)
-        {
-            for(int j = 0; j < 3; j++)
+        glBegin(GL_POINTS);
+            for(i = -0.15f; i <= 0.15f; i += 0.1f)
             {
-                int vi = face_indicies[i][j];
-                int ni = face_indicies[i][j + 3];
-                int ti = face_indicies[i][j + 6];
-
-                glNormal3f(normals[ni][0], normals[ni][1], normals[ni][2]);
-                glTexCoord2f(textures[ti][0], textures[ti][1]);
-                glVertex3f(vertices[vi][0], vertices[vi][1], vertices[vi][2]);
+                for(j = -0.15f; j <= 0.15f; j += 0.1f)
+                {
+                    glVertex3f(i, j, 0.0f);
+                }
             }
-        }
-    glEnd();    
+        glEnd();
+    glPopMatrix();
 
-    //update
-    if(gbAnimate)
-    {
-        angle = angle + 0.05f;
-        if(angle >= 360.0f)
-            angle = 0.0f;
-    }
+    //2nd shape
+    glPushMatrix();          
+        glTranslatef(0.0f, 0.3f, 0.0f);
+
+        glBegin(GL_LINES);
+            i = -0.15f;
+            for(j = 0.15f; j >= -0.05; j -= 0.1f)
+            {
+                 glVertex3f(i, j, 0.0f);
+                 glVertex3f(-i, j, 0.0f);
+
+                 glVertex3f(-j, -i, 0.0f);
+                 glVertex3f(-j, i, 0.0f);
+            }
+
+            i = -0.15f;
+            for(j = -0.15f; j <= 0.15f; j += 0.1f)
+            {
+                glVertex3f(i, j, 0.0f);
+                glVertex3f(-j, -i, 0.0f);
+
+                glVertex3f(-i, j, 0.0f);
+                glVertex3f(-j, i, 0.0f);
+            }
+        glEnd();
+    glPopMatrix();
+
+    //3rd shape
+    glPushMatrix();          
+        glTranslatef(0.5f, 0.3f, 0.0f);
+
+        glBegin(GL_LINES);
+            i = -0.15f;
+            for(j = -0.15f; j <= 0.15f; j += 0.1f)
+            {
+                glVertex3f(i, j, 0.0f);
+                glVertex3f(-i, j, 0.0f);     
+
+                glVertex3f(j, i, 0.0f);
+                glVertex3f(j, -i, 0.0f);   
+            }
+        glEnd();
+    glPopMatrix();
+
+    //4th shape
+    glPushMatrix();          
+        glTranslatef(-0.5f, -0.3f, 0.0f);
+
+        glBegin(GL_LINES);
+            i = -0.15f;
+            for(j = -0.15f; j <= 0.15f; j += 0.1f)
+            {
+                glVertex3f(i, j, 0.0f);
+                glVertex3f(-i, j, 0.0f);     
+
+                glVertex3f(j, i, 0.0f);
+                glVertex3f(j, -i, 0.0f);   
+            }
+
+            i = -0.15f;
+            for(j = -0.15f; j <= 0.15f; j += 0.1f)
+            {
+                glVertex3f(i, j, 0.0f);
+                glVertex3f(-j, -i, 0.0f);
+
+                glVertex3f(-i, j, 0.0f);
+                glVertex3f(-j, i, 0.0f);
+            }
+        glEnd();
+    glPopMatrix();
+
+    //5th shape
+    glPushMatrix();          
+        glTranslatef(0.0f, -0.3f, 0.0f);
+
+        glBegin(GL_LINES);
+            i = -0.15f;
+            for(j = -0.15f; j <= 0.15f; j += 0.1f)
+            {
+                glVertex3f(i, -i, 0.0f);
+                glVertex3f(j, i, 0.0f);
+
+                glVertex3f(i, -i, 0.0f);
+                glVertex3f(-i, j, 0.0f);
+            }
+            
+            glVertex3f(i, i, 0.0f);
+            glVertex3f(-i, i, 0.0f);
+            glVertex3f(-i, -i, 0.0f);
+            glVertex3f(-i, i, 0.0f);
+        glEnd();
+    glPopMatrix();
+
+    //6th shape
+    glPushMatrix();          
+        glTranslatef(0.5f, -0.3f, 0.0f);
+
+        glBegin(GL_QUADS);
+            j = 0.15f;
+            for(i = -0.15f; i <= 0.05f; i += 0.1f)
+            {
+                if(k == 0)
+                {
+                    glColor3f(1.0f, 0.0f, 0.0f);
+                }
+                else if(k == 1)
+                {
+                    glColor3f(0.0f, 1.0f, 0.0f);
+                }
+                else if(k == 2)
+                {
+                    glColor3f(0.0f, 0.0f, 1.0f);
+                }
+                
+                glVertex3f(i, j, 0.0f);
+                glVertex3f(i + 0.1f, j, 0.0f);
+                glVertex3f(i + 0.1f, -j, 0.0f);
+                glVertex3f(i, -j, 0.0f);
+
+                k++;
+            }
+        glEnd();
+
+        glBegin(GL_LINES);
+            i = -0.15f;
+            glColor3f(1.0f, 1.0f, 1.0f);
+            for(j = -0.15f; j <= 0.15f; j += 0.1f)
+            {
+                glVertex3f(i, j, 0.0f);
+                glVertex3f(-i, j, 0.0f);     
+
+                glVertex3f(j, i, 0.0f);
+                glVertex3f(j, -i, 0.0f);   
+            }
+        glEnd();
+    glPopMatrix();
 
     SwapBuffers(ghdc);
 }
@@ -512,9 +519,6 @@ void UnInitialize(void)
     
         ShowCursor(true);
     }
-
-    //delete textures
-    glDeleteTextures(1, &teapot_texture);
 
     if(wglGetCurrentContext() == ghrc)
     {
