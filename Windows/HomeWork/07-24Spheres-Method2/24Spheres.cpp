@@ -52,7 +52,6 @@ GLfloat angle_for_x_rotation = 0.0f;
 GLfloat angle_for_y_rotation = 0.0f;
 GLfloat angle_for_z_rotation = 0.0f;
 
-int width, height;
 
 // --- WinMain() - entry point function ---
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -176,8 +175,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 
         case WM_SIZE:
             Resize(LOWORD(lParam), HIWORD(lParam));
-            width = LOWORD(lParam);
-            height = HIWORD(lParam);
             break;
 
         case WM_CHAR:
@@ -488,28 +485,32 @@ void Display(void)
 void DrawSpheres(void)
 {
     //variable declaration
+    GLfloat viewport[4];
+    GLfloat width, height;
+    GLfloat xTranslate, yTranslate;
+
     GLfloat materialAmbient[4];
     GLfloat materialDiffuse[4];
     GLfloat materialSpecular[4];
     GLfloat materialShininess;
-    GLfloat xCentre, yCentre;
 
     //code
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    Resize(width / 4, height / 6);
-    
-    if(width <= height)
+
+    glGetFloatv(GL_VIEWPORT, viewport);
+    if(viewport[2] <= viewport[3])
     {
-        xCentre = 15.5f / 2.0f;
-        yCentre = (15.5f * (GLfloat)height * 4.0f / (GLfloat)(width * 6.0f)) / 2.0f;
+        width = 15.5f;
+        height = 15.5f * viewport[3] / viewport[2];
     }
     else
     {
-        xCentre = (15.5f * (GLfloat)width * 6.0f / (GLfloat)(height * 4.0f)) / 2.0f;
-        yCentre = 15.5f / 2.0f;
+        width = 15.5f * viewport[2] / viewport[3];
+        height = 15.5f;
     }
     
-    glViewport(0, height * 5 / 6, width / 4, height / 6);
+    xTranslate = width / 5.0f;
+    yTranslate = height / 7.0f;
 
     // --- Emerald ---
     materialAmbient[0] = 0.0215f;
@@ -538,10 +539,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[0], 5.0f, 30, 30);
-
-    glViewport(width / 4, height * 5 / 6, width / 4, height / 6);
+    glTranslatef(xTranslate * 1.0f, yTranslate * 6.0f, 0.0f);
+    gluSphere(quadric[0], 1.0f, 30, 30);
 
     // --- Jade ---
     materialAmbient[0] = 0.135f;
@@ -570,10 +569,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[1], 5.0f, 30, 30);
-
-    glViewport(width * 2 / 4, height * 5 / 6, width / 4, height / 6);
+    glTranslatef(xTranslate * 2.0f, yTranslate * 6.0f, 0.0f);
+    gluSphere(quadric[1], 1.0f, 30, 30);
 
     // --- Obsidian ---
     materialAmbient[0] = 0.05375f;
@@ -602,10 +599,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[2], 5.0f, 30, 30);
-
-    glViewport(width * 3 / 4, height * 5 / 6, width / 4, height / 6);
+    glTranslatef(xTranslate * 3.0f, yTranslate * 6.0f, 0.0f);
+    gluSphere(quadric[2], 1.0f, 30, 30);
 
     // --- Pearl ---
     materialAmbient[0] = 0.25f;
@@ -634,10 +629,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[3], 5.0f, 30, 30);
-
-    glViewport(0, height * 4 / 6, width / 4, height / 6);
+    glTranslatef(xTranslate * 4.0f, yTranslate * 6.0f, 0.0f);
+    gluSphere(quadric[3], 1.0f, 30, 30);
 
     // --- Ruby ---
     materialAmbient[0] = 0.1745f;
@@ -666,10 +659,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[4], 5.0f, 30, 30);
-    
-    glViewport(width / 4, height * 4 / 6, width / 4, height / 6);
+    glTranslatef(xTranslate * 1.0f, yTranslate * 5.0f, 0.0f);
+    gluSphere(quadric[4], 1.0f, 30, 30);
 
     // --- Turquoise ---
     materialAmbient[0] = 0.1f;
@@ -698,10 +689,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[5], 5.0f, 30, 30);
-    
-    glViewport(width * 2 / 4, height * 4 / 6, width / 4, height / 6);
+    glTranslatef(xTranslate * 2.0f, yTranslate * 5.0f, 0.0f);
+    gluSphere(quadric[5], 1.0f, 30, 30);
 
     // --- Brass ---
     materialAmbient[0] = 0.329412f;
@@ -730,10 +719,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[6], 5.0f, 30, 30);
-
-    glViewport(width * 3 / 4, height * 4 / 6, width / 4, height / 6);
+    glTranslatef(xTranslate * 3.0f, yTranslate * 5.0f, 0.0f);
+    gluSphere(quadric[6], 1.0f, 30, 30);
 
     // --- Bronze ---
     materialAmbient[0] = 0.2125f;
@@ -762,10 +749,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[7], 5.0f, 30, 30);
-
-    glViewport(0, height * 3 / 6, width / 4, height / 6);
+    glTranslatef(xTranslate * 4.0f, yTranslate * 5.0f, 0.0f);
+    gluSphere(quadric[7], 1.0f, 30, 30);
 
     // --- Chrome ---
     materialAmbient[0] = 0.25f;
@@ -794,10 +779,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[8], 5.0f, 30, 30);
-
-    glViewport(width / 4, height * 3 / 6, width / 4, height / 6);
+    glTranslatef(xTranslate * 1.0f, yTranslate * 4.0f, 0.0f);
+    gluSphere(quadric[8], 1.0f, 30, 30);
 
     // --- Copper ---
     materialAmbient[0] = 0.19125f;
@@ -826,10 +809,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[9], 5.0f, 30, 30);
-
-    glViewport(width * 2 / 4, height * 3 / 6, width / 4, height / 6);
+    glTranslatef(xTranslate * 2.0f, yTranslate * 4.0f, 0.0f);
+    gluSphere(quadric[9], 1.0f, 30, 30);
 
     // --- Gold ---
     materialAmbient[0] = 0.24725f;
@@ -858,10 +839,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[10], 5.0f, 30, 30);
-
-    glViewport(width * 3 / 4, height * 3 / 6, width / 4, height / 6);
+    glTranslatef(xTranslate * 3.0f, yTranslate * 4.0f, 0.0f);
+    gluSphere(quadric[10], 1.0f, 30, 30);
 
     // --- Silver ---
     materialAmbient[0] = 0.19225f;
@@ -890,10 +869,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[11], 5.0f, 30, 30);
-
-    glViewport(0, height * 2 / 6, width / 4, height / 6);
+    glTranslatef(xTranslate * 4.0f, yTranslate * 4.0f, 0.0f);
+    gluSphere(quadric[11], 1.0f, 30, 30);
 
     // --- Black ---
     materialAmbient[0] = 0.0f;
@@ -922,10 +899,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[12], 5.0f, 30, 30);
-
-    glViewport(width / 4, height * 2 / 6, width / 4, height / 6);
+    glTranslatef(xTranslate * 1.0f, yTranslate * 3.0f, 0.0f);
+    gluSphere(quadric[12], 1.0f, 30, 30);
 
     // --- Cyan ---
     materialAmbient[0] = 0.0f;
@@ -954,10 +929,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[13], 5.0f, 30, 30);
-
-    glViewport(width * 2 / 4, height * 2 / 6, width / 4, height / 6);
+    glTranslatef(xTranslate * 2.0f, yTranslate * 3.0f, 0.0f);
+    gluSphere(quadric[13], 1.0f, 30, 30);
 
     // --- Green ---
     materialAmbient[0] = 0.0f;
@@ -986,10 +959,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[14], 5.0f, 30, 30);
-
-    glViewport(width * 3 / 4, height * 2 / 6, width / 4, height / 6);
+    glTranslatef(xTranslate * 3.0f, yTranslate * 3.0f, 0.0f);
+    gluSphere(quadric[14], 1.0f, 30, 30);
 
     // --- Red ---
     materialAmbient[0] = 0.0f;
@@ -1018,10 +989,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[15], 5.0f, 30, 30);
-
-    glViewport(0, height / 6, width / 4, height / 6);
+    glTranslatef(xTranslate * 4.0f, yTranslate * 3.0f, 0.0f);
+    gluSphere(quadric[15], 1.0f, 30, 30);
 
     // --- White ---
     materialAmbient[0] = 0.0f;
@@ -1050,10 +1019,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[16], 5.0f, 30, 30);
-
-    glViewport(width / 4, height / 6, width / 4, height / 6);
+    glTranslatef(xTranslate * 1.0f, yTranslate * 2.0f, 0.0f);
+    gluSphere(quadric[16], 1.0f, 30, 30);
 
     // --- Yellow Plastic ---
     materialAmbient[0] = 0.0f;
@@ -1082,10 +1049,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[17], 5.0f, 30, 30);
-
-    glViewport(width * 2 / 4, height / 6, width / 4, height / 6);
+    glTranslatef(xTranslate * 2.0f, yTranslate * 2.0f, 0.0f);
+    gluSphere(quadric[17], 1.0f, 30, 30);
 
     // --- Black ---
     materialAmbient[0] = 0.02f;
@@ -1114,10 +1079,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[18], 5.0f, 30, 30);
-
-    glViewport(width * 3 / 4, height / 6, width / 4, height / 6);
+    glTranslatef(xTranslate * 3.0f, yTranslate * 2.0f, 0.0f);
+    gluSphere(quadric[18], 1.0f, 30, 30);
 
     // --- Cyan ---
     materialAmbient[0] = 0.0f;
@@ -1146,10 +1109,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[19], 5.0f, 30, 30);
-
-    glViewport(0, 0, width / 4, height / 6);
+    glTranslatef(xTranslate * 4.0f, yTranslate * 2.0f, 0.0f);
+    gluSphere(quadric[19], 1.0f, 30, 30);
 
     // --- Green ---
     materialAmbient[0] = 0.0f;
@@ -1178,10 +1139,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[20], 5.0f, 30, 30);
-
-    glViewport(width / 4, 0, width / 4, height / 6);
+    glTranslatef(xTranslate * 1.0f, yTranslate * 1.0f, 0.0f);
+    gluSphere(quadric[20], 1.0f, 30, 30);
 
     // --- Red ---
     materialAmbient[0] = 0.05f;
@@ -1210,10 +1169,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[21], 5.0f, 30, 30);
-
-    glViewport(width * 2 / 4, 0, width / 4, height / 6);
+    glTranslatef(xTranslate * 2.0f, yTranslate * 1.0f, 0.0f);
+    gluSphere(quadric[21], 1.0f, 30, 30);
 
     // --- White ---
     materialAmbient[0] = 0.05f;
@@ -1242,10 +1199,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[22], 5.0f, 30, 30);
-
-    glViewport(width * 3 / 4, 0, width / 4, height / 6);
+    glTranslatef(xTranslate * 3.0f, yTranslate * 1.0f, 0.0f);
+    gluSphere(quadric[22], 1.0f, 30, 30);
 
     // --- Yellow Rubber ---
     materialAmbient[0] = 0.05f;
@@ -1274,9 +1229,8 @@ void DrawSpheres(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    glTranslatef(xCentre, yCentre, 0.0f);
-    gluSphere(quadric[23], 5.0f, 30, 30);
-
+    glTranslatef(xTranslate * 4.0f, yTranslate * 1.0f, 0.0f);
+    gluSphere(quadric[23], 1.0f, 30, 30);
 }
 
 // --- UnInitialize() ---
