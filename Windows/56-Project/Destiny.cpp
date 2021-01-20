@@ -19,7 +19,7 @@
 #define WIN_HEIGHT 600                                   //window height
 
 #define MAX_TREES  350
-#define MAX_HUMANOIDS 10
+#define MAX_HUMANOIDS 6
 
 // --- Global Function Declaration ---
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);    //callback function
@@ -1006,10 +1006,10 @@ void Scene2(void)
     if(xEye >= -8.0f)
         xEye -= 0.001f;
 
-    if(humanTrans >= 11.0f)
+    if(humanTrans >= 9.0f)
         bFade = true;
 
-    if(humanTrans >= 12.0f)
+    if(humanTrans >= 10.0f)
     {
         gbScene2 = false;
         gbScene3 = true;
@@ -1750,7 +1750,7 @@ void EndCredits(void)
     if(bCredits)
     {
         if(yTrans <= 4.0f)
-            yTrans += 0.005f;
+            yTrans += 0.0065f;
         else
         {
             gbEndCredits = false;
@@ -1866,7 +1866,7 @@ void SpecialCredits(void)
         }
     }
     
-    if(timer <= 5.0f)
+    if(timer <= 3.5f)
         timer += 0.01f;
     else 
     {
