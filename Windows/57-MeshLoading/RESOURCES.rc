@@ -1,0 +1,4 @@
+#include "MeshLoading.h"
+
+MYICON             ICON    yip.ico
+MONKEYHEAD_BITMAP  BITMAP  monkey.bmp
