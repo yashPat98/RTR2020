@@ -82,10 +82,10 @@ bool gbAnimate  = false;                  //toggle animation
 bool gbLight    = false;                  //toggle lighting
 bool gbTexture  = false;                  //toggle texturing
 
-GLfloat lightAmbient[]  = {0.0f, 0.0f, 0.0f, 1.0f};
-GLfloat lightDiffuse[]  = {1.0f, 1.0f, 1.0f, 1.0f};
-GLfloat lightSpecular[] = {1.0f, 1.0f, 1.0f, 1.0f};
-GLfloat lightPosition[] = {5.0f, 5.0f, 5.0f, 1.0f};
+GLfloat lightAmbient[]  = {0.0f, 0.0f, 0.0f, 1.0f};      //ambient RGBA intensity of light 0
+GLfloat lightDiffuse[]  = {1.0f, 1.0f, 1.0f, 1.0f};      //diffuse RGBA intensity of light 0
+GLfloat lightSpecular[] = {1.0f, 1.0f, 1.0f, 1.0f};      //specular RGBA intensity of light 0
+GLfloat lightPosition[] = {5.0f, 5.0f, 5.0f, 1.0f};      //poisition of light 0
 
 GLuint monkeyhead_texture;
 

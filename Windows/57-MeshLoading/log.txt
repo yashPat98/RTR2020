@@ -1,9 +1,0 @@
-Program started successfully.
-
-Meshfile name : MonkeyHead.obj
-Vertices   : 31658
-Tex-Coords : 32058
-Normals    : 62819
-Triangles  : 62976
-
-Program completed successfully.
