@@ -1,0 +1,14 @@
+@echo off
+call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\Common7\Tools\VsDevCmd.bat"
+
+cl.exe /c /EHsc "Model.cpp"
+rc.exe "RESOURCES.rc"
+link.exe "Model.obj" "RESOURCES.res" "user32.lib" "gdi32.lib" /SUBSYSTEM:WINDOWS
+
+call "Model.exe"
+
+del "Model.obj"
+del "RESOURCES.res"
+del "Model.exe"
+
+EXIT (0)

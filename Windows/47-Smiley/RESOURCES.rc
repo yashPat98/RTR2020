@@ -1,5 +1,0 @@
-#include "Smiley.h"
-
-MYICON ICON YIP.ico
-
-SMILEY_BITMAP BITMAP Smiley.bmp

@@ -1,0 +1,9 @@
+#include "Destiny.h"
+
+MYICON          ICON     YIP.ico
+BG_MUSIC        WAVE     BGM.wav
+GROUND_BITMAP   BITMAP   textures/ground.bmp
+DAY_BITMAP      BITMAP   textures/day.bmp
+NIGHT_BITMAP    BITMAP   textures/night.bmp
+FEATHER_BITMAP  BITMAP   textures/feather.bmp
+BIRD_BITMAP     BITMAP   textures/bird.bmp
