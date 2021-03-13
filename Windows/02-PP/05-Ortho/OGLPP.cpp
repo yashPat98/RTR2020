@@ -3,7 +3,8 @@
 #include <stdio.h>                 //C header 
 #include <gl/glew.h>               //OpenGL extension wrangler (must be included before gl.h)
 #include <gl/gl.h>                 //OpenGL header
-#include "RESOURCES.h"             //Resources header
+#include "vmath.h"                 //Maths header     
+#include "RESOURCES.h"             //Resources header    
 
 //import libraries
 #pragma comment(lib, "user32.lib")
@@ -19,25 +20,43 @@
 #define VK_F       0x46            //virtual key code of F key
 #define VK_f       0x60            //virtual key code of f key
 
+//namespaces
+using namespace vmath;
+
+//type declarations
+enum
+{
+    AMC_ATTRIBUTE_POSITION = 0,
+    AMC_ATTRIBUTE_COLOR,
+    AMC_ATTRIBUTE_NORMAL,
+    AMC_ATTRIBUTE_TEXCOORD
+};
+
 //callback procedure declaration
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 
 //global variables
-HWND   ghwnd  = NULL;              //handle to a window
-HDC    ghdc   = NULL;              //handle to a device context
-HGLRC  ghrc   = NULL;              //handle to a rendering context
+HWND   ghwnd  = NULL;                   //handle to a window
+HDC    ghdc   = NULL;                   //handle to a device context
+HGLRC  ghrc   = NULL;                   //handle to a rendering context
 
-DWORD dwStyle = NULL;              //window style
-WINDOWPLACEMENT wpPrev;            //structure for holding previous window position
+DWORD dwStyle = NULL;                   //window style
+WINDOWPLACEMENT wpPrev;                 //structure for holding previous window position
 
-bool gbActiveWindow = false;       //flag indicating whether window is active or not
-bool gbFullscreen = false;         //flag indicating whether window is fullscreen or not
+bool gbActiveWindow = false;            //flag indicating whether window is active or not
+bool gbFullscreen = false;              //flag indicating whether window is fullscreen or not
 
-FILE*  gpFile = NULL;              //log file
+FILE*  gpFile = NULL;                   //log file
 
-GLuint gVertexShaderObject;        //handle to vertex shader object
-GLuint gFragmentShaderObject;      //handle to fragment shader object
-GLuint gShaderProgramObject;       //handle to shader program object
+GLuint vertexShaderObject;              //handle to vertex shader object
+GLuint fragmentShaderObject;            //handle to fragment shader object
+GLuint shaderProgramObject;             //handle to shader program object
+
+GLuint vao;                            
+GLuint vbo;                             
+GLuint mvpMatrixUniform;                
+
+mat4 orthographicProjectionMatrix;
 
 //windows entry point function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -50,7 +69,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
     WNDCLASSEX wndclass;                                   //structure holding window class attributes
     MSG msg;                                               //structure holding message attributes
     HWND hwnd;                                             //handle to a window
-    TCHAR szAppName[] = TEXT("Bluescreen With Shaders");   //name of window class
+    TCHAR szAppName[] = TEXT("Ortho");                     //name of window class
 
     int cxScreen, cyScreen;                                //screen width and height for centering window
     int init_x, init_y;                                    //top-left coordinates of centered window
@@ -366,54 +385,154 @@ void Initialize(void)
     //--- Vertex Shader ---
 
     //create shader
-    gVertexShaderObject = glCreateShader(GL_VERTEX_SHADER);
+    vertexShaderObject = glCreateShader(GL_VERTEX_SHADER);
 
     //provide source code to shader (pass-through shader)
     const GLchar* vertexShaderSourceCode = 
-        "#version 450" \
-        "\n" \
-        "void main(void)" \
-        "{" \
+        "#version 450 core"                                             \
+        "\n"                                                            \
+        "in vec4 vPosition;"                                            \
+        "uniform mat4 u_mvpMatrix;"                                     \
+        "void main(void)"                                               \
+        "{"                                                             \
+        "   gl_Position = u_mvpMatrix * vPosition;"                     \
         "}";
     
-    //replace the source code in a shader object
-    glShaderSource(gVertexShaderObject, 1, (const GLchar**)&vertexShaderSourceCode, NULL);
+    glShaderSource(vertexShaderObject, 1, (const GLchar**)&vertexShaderSourceCode, NULL);
 
-    //compile shader 
-    glCompileShader(gVertexShaderObject);
+    //compile shader
+    glCompileShader(vertexShaderObject);
+
+    //shader compilation error checking
+    GLint infoLogLength = 0;
+    GLint shaderCompiledStatus = 0;
+    GLchar* szInfoLog = NULL;
+
+    glGetShaderiv(vertexShaderObject, GL_COMPILE_STATUS, &shaderCompiledStatus);
+    if(shaderCompiledStatus == GL_FALSE)
+    {
+        glGetShaderiv(vertexShaderObject, GL_INFO_LOG_LENGTH, &infoLogLength);
+        if(infoLogLength > 0)
+        {
+            szInfoLog = (GLchar*)malloc(sizeof(GLchar) * infoLogLength);
+            if(infoLogLength != NULL)
+            {
+                GLsizei written;
+                glGetShaderInfoLog(vertexShaderObject, infoLogLength, &written, szInfoLog);
+                fprintf(gpFile, "Vertex Shader Compilation Log : %s\n", szInfoLog);
+                free(szInfoLog);
+                DestroyWindow(ghwnd);
+            }
+        }
+    }
+
+    fprintf(gpFile, "\n----- Vertex Shader Compiled Successfully -----\n");
 
     //--- Fragment Shader ---
 
     //create shader
-    gFragmentShaderObject = glCreateShader(GL_FRAGMENT_SHADER);
+    fragmentShaderObject = glCreateShader(GL_FRAGMENT_SHADER);
 
     //provide source code to shader (pass-through shader)
     const GLchar* fragmentShaderSourceCode = 
-        "#version 450" \
-        "\n" \
-        "void main(void)" \
-        "{" \
+        "#version 450 core"                                         \
+        "\n"                                                        \
+        "out vec4 FragColor;"                                       \
+        "void main(void)"                                           \
+        "{"                                                         \
+        "   FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);"              \
         "}";
 
-    glShaderSource(gFragmentShaderObject, 1, (const GLchar**)&fragmentShaderSourceCode, NULL);
+    glShaderSource(fragmentShaderObject, 1, (const GLchar**)&fragmentShaderSourceCode, NULL);
  
     //compile shader
-    glCompileShader(gFragmentShaderObject);
+    glCompileShader(fragmentShaderObject);
+
+    //shader compilation error checking
+    glGetShaderiv(fragmentShaderObject, GL_COMPILE_STATUS, &shaderCompiledStatus);
+    if(shaderCompiledStatus == GL_FALSE)
+    {
+        glGetShaderiv(fragmentShaderObject, GL_INFO_LOG_LENGTH, &infoLogLength);
+        if(infoLogLength > 0)
+        {
+            szInfoLog = (GLchar*)malloc(sizeof(GLchar) * infoLogLength);
+            if(szInfoLog != NULL)
+            {
+                GLsizei written;
+                glGetShaderInfoLog(fragmentShaderObject, infoLogLength, &written, szInfoLog);
+                fprintf(gpFile, "Fragment Shader Compilation Log : %s\n", szInfoLog);
+                free(szInfoLog);
+                DestroyWindow(ghwnd);
+            }
+        }
+    }
+
+    fprintf(gpFile, "----- Fragment Shader Compiled Successfully -----\n");
 
     //--- Shader Program ---
 
     //create shader program
-    gShaderProgramObject = glCreateProgram();
+    shaderProgramObject = glCreateProgram();
 
     //attach vertex shader to shader program
-    glAttachShader(gShaderProgramObject, gVertexShaderObject);
+    glAttachShader(shaderProgramObject, vertexShaderObject);
 
     //attach fragment shader to shader program
-    glAttachShader(gShaderProgramObject, gFragmentShaderObject);
+    glAttachShader(shaderProgramObject, fragmentShaderObject);
+
+    //binding of shader program object with vertex shader position attribute
+    glBindAttribLocation(shaderProgramObject, AMC_ATTRIBUTE_POSITION, "vPosition");
 
     //link shader program
-    glLinkProgram(gShaderProgramObject);
+    glLinkProgram(shaderProgramObject);
     
+    //shader linking error checking
+    GLint shaderProgramLinkStatus = 0;
+    glGetProgramiv(shaderProgramObject, GL_LINK_STATUS, &shaderProgramLinkStatus);
+    if(shaderProgramLinkStatus > 0)
+    {
+        glGetProgramiv(shaderProgramObject, GL_INFO_LOG_LENGTH, &infoLogLength);
+        if(infoLogLength > 0)
+        {
+            szInfoLog = (GLchar*)malloc(sizeof(GLchar) * infoLogLength);
+            if(szInfoLog != NULL)
+            {
+                GLsizei written;
+                glGetProgramInfoLog(shaderProgramObject, infoLogLength, &written, szInfoLog);
+                fprintf(gpFile, "Shader Program Link Log : %s\n", szInfoLog);
+                DestroyWindow(ghwnd);
+            }
+        }
+    }
+
+    fprintf(gpFile, "----- Shader Program Linked Successfully -----\n");
+
+    //get MVP uniform location
+    mvpMatrixUniform = glGetUniformLocation(shaderProgramObject, "u_mvpMatrix");
+
+    //vertex data
+    const GLfloat triangleVertices[] = 
+    {
+        0.0f, 50.0f, 0.0f,                  
+        -50.0f, -50.0f, 0.0f,              
+        50.0f, -50.0f, 0.0f
+    };
+
+    //setup vao and vbo
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(triangleVertices), triangleVertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(AMC_ATTRIBUTE_POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(AMC_ATTRIBUTE_POSITION);
+
+    //unbind buffers
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
     //smooth shading  
     glShadeModel(GL_SMOOTH);                  
 
@@ -427,7 +546,7 @@ void Initialize(void)
     glEnable(GL_CULL_FACE);
 
     //set clearing color
-    glClearColor(0.0f, 0.0f, 1.0f, 1.0f);  
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  
 
     //warm-up  call
     Resize(WIN_WIDTH, WIN_HEIGHT);
@@ -443,17 +562,58 @@ void Resize(int width, int height)
 
     //set viewport transformation
     glViewport(0, 0, (GLsizei)width, (GLsizei)height);
+
+    if(width <= height)
+    {
+        orthographicProjectionMatrix = vmath::ortho( -100.0f,                           //left
+                                                      100.0f,                           //right
+                                                     -100.0f * (height / width),        //bottom
+                                                      100.0f * (height / width),        //top
+                                                     -100.0f,                           //near
+                                                      100.0f );                         //far
+    }
+    else
+    {
+        orthographicProjectionMatrix = vmath::ortho( -100.0f * (width / height),        //left
+                                                      100.0f * (width / height),        //right
+                                                     -100.0f,                           //bottom
+                                                      100.0f,                           //top
+                                                     -100.0f,                           //near
+                                                      100.0f );                         //far
+    }
 }
 
 void Display(void)
 {
+    //variable declarations
+    mat4 modelViewMatrix;
+    mat4 modelViewProjectionMatrix;
+
     //code
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     //start using OpenGL program object 
-    glUseProgram(gShaderProgramObject);
+    glUseProgram(shaderProgramObject);
 
     //OpenGL Drawing
+    //set modelview and modelviewprojection matrices to identity
+    modelViewMatrix = mat4::identity();
+    modelViewProjectionMatrix = mat4::identity();
+
+    //multiply orthographic and modelview matrix to get modelviewprojection matrix
+    modelViewProjectionMatrix = orthographicProjectionMatrix * modelViewMatrix;
+
+    //pass above modelviewprojection matrix to u_mvpMatrix in vertex shader
+    glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, modelViewProjectionMatrix);
+
+    //bind vao 
+    glBindVertexArray(vao);
+
+    //draw
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    //unbind vao
+    glBindVertexArray(0);
 
     //stop using OpenGL program object
     glUseProgram(0);
@@ -482,26 +642,48 @@ void UnInitialize(void)
         gbFullscreen = false;
     }
 
-    //detach vertex shader from shader program object
-    glDetachShader(gShaderProgramObject, gVertexShaderObject);
+    //release vao 
+    if(vao)
+    {
+        glDeleteVertexArrays(1, &vao);
+        vao = 0;
+    }
 
-    //detach fragment shader from shader program object
-    glDetachShader(gShaderProgramObject, gFragmentShaderObject);
+    //release vbo
+    if(vbo)
+    {
+        glDeleteBuffers(1, &vbo);
+        vbo = 0;
+    }
 
-    //delete vertex shader object 
-    glDeleteShader(gVertexShaderObject);
-    gVertexShaderObject = 0;
+    //safe shader cleanup
+    if(shaderProgramObject)
+    {
+        GLsizei shader_count;
+        GLuint* p_shaders = NULL;
 
-    //delete fragment shader object 
-    glDeleteShader(gFragmentShaderObject);
-    gFragmentShaderObject = 0;
+        glUseProgram(shaderProgramObject);        
+        glGetProgramiv(shaderProgramObject, GL_ATTACHED_SHADERS, &shader_count);
 
-    //delete shader program
-    glDeleteProgram(gShaderProgramObject);
-    gShaderProgramObject = 0;
+        p_shaders = (GLuint*)malloc(shader_count * sizeof(GLuint));
+        memset((void*)p_shaders, 0, shader_count * sizeof(GLuint));
 
-    //unlink shader program
-    glUseProgram(0);
+        glGetAttachedShaders(shaderProgramObject, shader_count, &shader_count, p_shaders);
+
+        for(GLsizei i = 0; i < shader_count; i++)
+        {
+            glDetachShader(shaderProgramObject, p_shaders[i]);
+            glDeleteShader(p_shaders[i]);
+            p_shaders[i] = 0;
+        }
+
+        free(p_shaders);
+        p_shaders = NULL;
+    
+        glDeleteProgram(shaderProgramObject);
+        shaderProgramObject = 0;
+        glUseProgram(0);
+    }
 
     //HGLRC : NULL means calling thread's current rendering context 
     //        is no longer current as well as it releases the device 
