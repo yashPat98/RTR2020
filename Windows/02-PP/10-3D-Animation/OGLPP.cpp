@@ -3,8 +3,8 @@
 #include <stdio.h>                 //C header 
 #include <gl/glew.h>               //OpenGL extension wrangler (must be included before gl.h)
 #include <gl/gl.h>                 //OpenGL header
-#include "vmath.h"                 //Maths header     
-#include "RESOURCES.h"             //Resources header    
+#include "vmath.h"                 //Maths header
+#include "RESOURCES.h"             //Resources header
 
 //import libraries
 #pragma comment(lib, "user32.lib")
@@ -36,27 +36,35 @@ enum
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 
 //global variables
-HWND   ghwnd  = NULL;                   //handle to a window
-HDC    ghdc   = NULL;                   //handle to a device context
-HGLRC  ghrc   = NULL;                   //handle to a rendering context
+HWND   ghwnd  = NULL;              //handle to a window
+HDC    ghdc   = NULL;              //handle to a device context
+HGLRC  ghrc   = NULL;              //handle to a rendering context
 
-DWORD dwStyle = NULL;                   //window style
-WINDOWPLACEMENT wpPrev;                 //structure for holding previous window position
+DWORD dwStyle = NULL;              //window style
+WINDOWPLACEMENT wpPrev;            //structure for holding previous window position
 
-bool gbActiveWindow = false;            //flag indicating whether window is active or not
-bool gbFullscreen = false;              //flag indicating whether window is fullscreen or not
+bool gbActiveWindow = false;       //flag indicating whether window is active or not
+bool gbFullscreen = false;         //flag indicating whether window is fullscreen or not
 
-FILE*  gpFile = NULL;                   //log file
+FILE*  gpFile = NULL;              //log file
 
-GLuint vertexShaderObject;              //handle to vertex shader object
-GLuint fragmentShaderObject;            //handle to fragment shader object
-GLuint shaderProgramObject;             //handle to shader program object
+GLuint vertexShaderObject;         //handle to vertex shader object
+GLuint fragmentShaderObject;       //handle to fragment shader object
+GLuint shaderProgramObject;        //handle to shader program object
 
-GLuint vao;                            
-GLuint vbo_position;                             
-GLuint mvpMatrixUniform;                
+GLuint vao_pyramid;               //handle to vertex array object for triangle
+GLuint vbo_pyramid_position;      //handle to vertex buffer object for vertices of triangle
+GLuint vbo_pyramid_color;         //handle to vertex buffer object for colors of triangle
 
-mat4 orthographicProjectionMatrix;
+GLuint vao_cube;                 //handle to vertex array object for square
+GLuint vbo_cube_position;        //handle to vertex buffer object for vertices of square
+GLuint vbo_cube_color;           //handle to vertex buffer object for colors of square
+
+GLuint mvpMatrixUniform;                 
+mat4 perspectiveProjectionMatrix;  
+
+GLfloat pyramid_rotation_angle = 0.0f;
+GLfloat cube_rotation_angle = 0.0f;
 
 //windows entry point function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -69,7 +77,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
     WNDCLASSEX wndclass;                                   //structure holding window class attributes
     MSG msg;                                               //structure holding message attributes
     HWND hwnd;                                             //handle to a window
-    TCHAR szAppName[] = TEXT("Ortho");                     //name of window class
+    TCHAR szAppName[] = TEXT("3D Animation");              //name of window class
 
     int cxScreen, cyScreen;                                //screen width and height for centering window
     int init_x, init_y;                                    //top-left coordinates of centered window
@@ -382,6 +390,8 @@ void Initialize(void)
         fprintf(gpFile, "%s\n", glGetStringi(GL_EXTENSIONS, i));
     }
 
+    //setup render scene
+
     //--- Vertex Shader ---
 
     //create shader
@@ -389,19 +399,22 @@ void Initialize(void)
 
     //shader source code
     const GLchar* vertexShaderSourceCode = 
-        "#version 450 core"                                             \
-        "\n"                                                            \
-        "in vec4 vPosition;"                                            \
-        "uniform mat4 u_mvpMatrix;"                                     \
-        "void main(void)"                                               \
-        "{"                                                             \
-        "   gl_Position = u_mvpMatrix * vPosition;"                     \
+        "#version 450 core"                                         \
+        "\n"                                                        \
+        "in vec4 vPosition;"                                        \
+        "in vec4 vColor;"                                           \
+        "uniform mat4 u_mvpMatrix;"                                 \
+        "out vec4 out_color;"                                       \
+        "void main(void)"                                           \
+        "{"                                                         \
+        "   gl_Position = u_mvpMatrix * vPosition;"                 \
+        "   out_color = vColor;"                                    \
         "}";
-    
+
     //provide source code to shader object
     glShaderSource(vertexShaderObject, 1, (const GLchar**)&vertexShaderSourceCode, NULL);
 
-    //compile shader
+    //compile shader 
     glCompileShader(vertexShaderObject);
 
     //shader compilation error checking
@@ -416,7 +429,7 @@ void Initialize(void)
         if(infoLogLength > 0)
         {
             szInfoLog = (GLchar*)malloc(sizeof(GLchar) * infoLogLength);
-            if(infoLogLength != NULL)
+            if(szInfoLog != NULL)
             {
                 GLsizei written;
                 glGetShaderInfoLog(vertexShaderObject, infoLogLength, &written, szInfoLog);
@@ -425,7 +438,7 @@ void Initialize(void)
                 DestroyWindow(ghwnd);
             }
         }
-    }
+    } 
 
     fprintf(gpFile, "\n----- Vertex Shader Compiled Successfully -----\n");
 
@@ -436,17 +449,18 @@ void Initialize(void)
 
     //shader source code
     const GLchar* fragmentShaderSourceCode = 
-        "#version 450 core"                                         \
-        "\n"                                                        \
-        "out vec4 FragColor;"                                       \
-        "void main(void)"                                           \
-        "{"                                                         \
-        "   FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);"              \
+        "#version 450 core"                             \
+        "\n"                                            \
+        "in vec4 out_color;"                            \
+        "out vec4 FragColor;"                           \
+        "void main(void)"                               \
+        "{"                                             \
+        "   FragColor = out_color;"                     \
         "}";
 
-    //provide source code to shader object
+    //provide source code to shader object 
     glShaderSource(fragmentShaderObject, 1, (const GLchar**)&fragmentShaderSourceCode, NULL);
- 
+
     //compile shader
     glCompileShader(fragmentShaderObject);
 
@@ -483,15 +497,18 @@ void Initialize(void)
     glAttachShader(shaderProgramObject, fragmentShaderObject);
 
     //binding of shader program object with vertex shader position attribute
-    glBindAttribLocation(shaderProgramObject, AMC_ATTRIBUTE_POSITION, "vPosition");
+    glBindAttribLocation(shaderProgramObject, AMC_ATTRIBUTE_POSITION, "vPositon");
 
-    //link shader program
+    //binding of shader program object with vertex shader color attribute
+    glBindAttribLocation(shaderProgramObject, AMC_ATTRIBUTE_COLOR, "vColor");
+
+    //link shader program 
     glLinkProgram(shaderProgramObject);
-    
+
     //shader linking error checking
     GLint shaderProgramLinkStatus = 0;
     glGetProgramiv(shaderProgramObject, GL_LINK_STATUS, &shaderProgramLinkStatus);
-    if(shaderProgramLinkStatus > 0)
+    if(shaderProgramLinkStatus == GL_FALSE)
     {
         glGetProgramiv(shaderProgramObject, GL_INFO_LOG_LENGTH, &infoLogLength);
         if(infoLogLength > 0)
@@ -510,26 +527,172 @@ void Initialize(void)
     fprintf(gpFile, "----- Shader Program Linked Successfully -----\n");
 
     //get MVP uniform location
-    mvpMatrixUniform = glGetUniformLocation(shaderProgramObject, "u_mvpMatrix");
+    mvpMatrixUniform = glGetUniformLocation(shaderProgramObject, "u_mvpMatrix"); 
 
-    //vertex data
-    const GLfloat triangleVertices[] = 
+    //pyramid vertex, color data
+    const GLfloat pyramidVertices[] =
     {
-        0.0f, 50.0f, 0.0f,                  
-        -50.0f, -50.0f, 0.0f,              
-        50.0f, -50.0f, 0.0f
+        //near
+        0.0f, 1.0f, 0.0f,
+        -1.0f, -1.0f, 1.0f,
+        1.0f, -1.0f, 1.0f,
+
+        //right
+        0.0f, 1.0f, 0.0f,
+        1.0f, -1.0f, 1.0f,
+        1.0f, -1.0f, -1.0f,
+    
+        //far
+        0.0f, 1.0f, 0.0f,
+        1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f,
+
+        //left
+        0.0f, 1.0f, 0.0f,
+        -1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f, 1.0f
     };
 
-    //setup vao and vbo
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    const GLfloat pyramidColor[] =
+    {
+        //near 
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f,
 
-    glGenBuffers(1, &vbo_position);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(triangleVertices), triangleVertices, GL_STATIC_DRAW);
+        //right
+        1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f,
+        0.0f, 1.0f, 0.0f,
+
+        //far
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f,
+
+        //left
+        1.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f,
+        0.0f, 1.0f, 0.0f
+    };
+
+    const GLfloat cubeVertices[] = 
+    {
+        //near 
+        1.0f, 1.0f, 1.0f,
+        -1.0f, 1.0f, 1.0f,
+        -1.0f, -1.0f, 1.0f, 
+        1.0f, -1.0f, 1.0f,
+
+        //right
+        1.0f, 1.0f, -1.0f,
+        1.0f, 1.0f, 1.0f,
+        1.0f, -1.0f, 1.0f,
+        1.0f, -1.0f, -1.0f,
+
+        //far
+        -1.0f, 1.0f, -1.0f,
+        1.0f, 1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f,
+
+        //left
+        -1.0f, 1.0f, -1.0f,
+        -1.0f, 1.0f, 1.0f, 
+        -1.0f, -1.0f, 1.0f,
+        -1.0f, -1.0f, -1.0f,
+
+        //top
+        1.0f, 1.0f, -1.0f,
+        -1.0f, 1.0f, -1.0f,
+        -1.0f, 1.0f, 1.0f,
+        1.0f, 1.0f, 1.0f,
+
+        //bottom
+        -1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, 1.0f,
+        -1.0f, -1.0f, 1.0f
+    };
+
+    const GLfloat cubeColor[] = 
+    {
+        //near
+        1.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+
+        //right 
+        0.0f, 1.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+
+        //far
+        0.0f, 0.0f, 1.0f,
+        0.0f, 0.0f, 1.0f,
+        0.0f, 0.0f, 1.0f,
+        0.0f, 0.0f, 1.0f,
+
+        //left
+        1.0f, 0.0f, 1.0f,
+        1.0f, 0.0f, 1.0f,
+        1.0f, 0.0f, 1.0f,
+        1.0f, 0.0f, 1.0f,
+
+        //top
+        1.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f,
+
+        //bottom
+        0.0f, 1.0f, 1.0f,
+        0.0f, 1.0f, 1.0f,
+        0.0f, 1.0f, 1.0f,
+        0.0f, 1.0f, 1.0f
+    };
+ 
+    //setup vao and vbo for triangle
+    glGenVertexArrays(1, &vao_pyramid);
+    glBindVertexArray(vao_pyramid);
+
+    glGenBuffers(1, &vbo_pyramid_position);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_pyramid_position);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(pyramidVertices), pyramidVertices, GL_STATIC_DRAW);
 
     glVertexAttribPointer(AMC_ATTRIBUTE_POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(AMC_ATTRIBUTE_POSITION);
+
+    glGenBuffers(1, &vbo_pyramid_color);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_pyramid_color);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(pyramidColor), pyramidColor, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(AMC_ATTRIBUTE_COLOR, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(AMC_ATTRIBUTE_COLOR);
+
+    //unbind buffers
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    //setup vao and vbo for square
+    glGenVertexArrays(1, &vao_cube);
+    glBindVertexArray(vao_cube);
+
+    glGenBuffers(1, &vbo_cube_position);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_cube_position);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(AMC_ATTRIBUTE_POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(AMC_ATTRIBUTE_POSITION);
+
+    glGenBuffers(1, &vbo_cube_color);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_cube_color);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeColor), cubeColor, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(AMC_ATTRIBUTE_COLOR, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(AMC_ATTRIBUTE_COLOR);
 
     //unbind buffers
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -545,13 +708,12 @@ void Initialize(void)
 
     //quality of color and texture coordinate interpolation
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);    
-    glEnable(GL_CULL_FACE);
 
     //set clearing color
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  
 
-    //set orthographic projection matrix to identity
-    orthographicProjectionMatrix = mat4::identity();
+    //set perspective projection matrix to identity
+    perspectiveProjectionMatrix = mat4::identity();
 
     //warm-up  call
     Resize(WIN_WIDTH, WIN_HEIGHT);
@@ -568,24 +730,7 @@ void Resize(int width, int height)
     //set viewport transformation
     glViewport(0, 0, (GLsizei)width, (GLsizei)height);
 
-    if(width <= height)
-    {
-        orthographicProjectionMatrix = vmath::ortho( -100.0f,                           //left
-                                                      100.0f,                           //right
-                                                     -100.0f * (height / width),        //bottom
-                                                      100.0f * (height / width),        //top
-                                                     -100.0f,                           //near
-                                                      100.0f );                         //far
-    }
-    else
-    {
-        orthographicProjectionMatrix = vmath::ortho( -100.0f * (width / height),        //left
-                                                      100.0f * (width / height),        //right
-                                                     -100.0f,                           //bottom
-                                                      100.0f,                           //top
-                                                     -100.0f,                           //near
-                                                      100.0f );                         //far
-    }
+    perspectiveProjectionMatrix = vmath::perspective(45.0f, (float)width / (float)height, 0.1f, 100.0f);
 }
 
 void Display(void)
@@ -593,36 +738,97 @@ void Display(void)
     //variable declarations
     mat4 modelViewMatrix;
     mat4 modelViewProjectionMatrix;
+    mat4 translateMatrix;
+    mat4 rotationMatrix;
+    mat4 scaleMatrix;
 
     //code
+    //clear the color buffer and depth buffer with currrent 
+    //clearing values (set up in initilaize)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    //start using OpenGL program object 
+    //start using OpenGL program object
     glUseProgram(shaderProgramObject);
 
     //OpenGL Drawing
-    //set modelview and modelviewprojection matrices to identity
+    
+    //--- Pyramid ---
+
+    //set modelview, modelviewprojection & translate matrices to identity
     modelViewMatrix = mat4::identity();
     modelViewProjectionMatrix = mat4::identity();
+    translateMatrix = mat4::identity();
 
-    //multiply orthographic and modelview matrix to get modelviewprojection matrix
-    modelViewProjectionMatrix = orthographicProjectionMatrix * modelViewMatrix;
+    //translate and rotate modelview matrix
+    translateMatrix = vmath::translate(-1.5f, 0.0f, -6.0f);
+    rotationMatrix = vmath::rotate(pyramid_rotation_angle, 0.0f, 1.0f, 0.0f);
+    modelViewMatrix = translateMatrix * rotationMatrix;
 
-    //pass above modelviewprojection matrix to u_mvpMatrix in vertex shader
+    //multiply the modelview and perspective projection matrix to get modelviewprojection matrix 
+    modelViewProjectionMatrix = perspectiveProjectionMatrix * modelViewMatrix;
+
+    //pass above modelviewprojection matrix to the vertex shader in
+    //"u_mvpMatrix" shader variable
     glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, modelViewProjectionMatrix);
 
-    //bind vao 
-    glBindVertexArray(vao);
+    //bind vao for triangle 
+    glBindVertexArray(vao_pyramid);
 
     //draw
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDrawArrays(GL_TRIANGLES, 0, 12);
 
     //unbind vao
+    glBindVertexArray(0);
+
+    //--- Cube ---
+
+    //set modelview, modelviewprojection and translate matrix to identity
+    modelViewMatrix = mat4::identity();
+    modelViewProjectionMatrix = mat4::identity();
+    translateMatrix = mat4::identity();
+    rotationMatrix = mat4::identity();
+    scaleMatrix = mat4::identity();
+
+    //translate modelview matrix
+    translateMatrix = vmath::translate(1.5f, 0.0f, -6.0f);
+    scaleMatrix = vmath::scale(0.75f, 0.75f, 0.75f);
+    rotationMatrix = vmath::rotate(cube_rotation_angle, 1.0f, 0.0f, 0.0f);
+    modelViewMatrix = translateMatrix * scaleMatrix * rotationMatrix;
+
+    //multiply the modelview and perspective projection matrix to get modelviewprojection matrix 
+    modelViewProjectionMatrix = perspectiveProjectionMatrix * modelViewMatrix;
+
+    //pass above modelviewprojection matrix to the vertex shader in
+    //"u_mvpMatrix" shader variable
+    glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, modelViewProjectionMatrix);
+
+    //bind vao for square
+    glBindVertexArray(vao_cube);
+
+    //draw
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    glDrawArrays(GL_TRIANGLE_FAN, 4, 4);
+    glDrawArrays(GL_TRIANGLE_FAN, 8, 4);
+    glDrawArrays(GL_TRIANGLE_FAN, 12, 4);
+    glDrawArrays(GL_TRIANGLE_FAN, 16, 4);
+    glDrawArrays(GL_TRIANGLE_FAN, 20, 4);
+
+    //unbind vao 
     glBindVertexArray(0);
 
     //stop using OpenGL program object
     glUseProgram(0);
 
+    //update 
+    pyramid_rotation_angle += 0.1f;
+    if(pyramid_rotation_angle >= 360.0f)
+        pyramid_rotation_angle = 0.0f;
+    
+    cube_rotation_angle += 0.1f;
+    if(cube_rotation_angle >= 360.0f)
+        cube_rotation_angle = 0.0f;
+
+    //swap the buffers
     SwapBuffers(ghdc);
 }
 
@@ -647,18 +853,42 @@ void UnInitialize(void)
         gbFullscreen = false;
     }
 
-    //release vao 
-    if(vao)
+    //release vao & vbo for triangle
+    if(vao_pyramid)
     {
-        glDeleteVertexArrays(1, &vao);
-        vao = 0;
+        glDeleteVertexArrays(1, &vao_pyramid);
+        vao_pyramid = 0;
     }
 
-    //release vbo
-    if(vbo_position)
+    if(vbo_pyramid_position)
     {
-        glDeleteBuffers(1, &vbo_position);
-        vbo_position = 0;
+        glDeleteBuffers(1, &vbo_pyramid_position);
+        vbo_pyramid_position = 0;
+    }
+
+    if(vbo_pyramid_color)
+    {
+        glDeleteBuffers(1, &vbo_pyramid_color);
+        vbo_pyramid_color = 0;
+    }
+
+    //release vao and vbo for square
+    if(vao_cube)
+    {
+        glDeleteVertexArrays(1, &vao_cube);
+        vao_cube = 0;
+    }
+
+    if(vbo_cube_position)
+    {
+        glDeleteBuffers(1, &vbo_cube_position);
+        vbo_cube_position = 0;
+    }
+
+    if(vbo_cube_color)
+    {
+        glDeleteBuffers(1, &vbo_cube_color);
+        vbo_cube_color = 0;
     }
 
     //safe shader cleanup
@@ -667,15 +897,15 @@ void UnInitialize(void)
         GLsizei shader_count;
         GLuint* p_shaders = NULL;
 
-        glUseProgram(shaderProgramObject);        
+        glUseProgram(shaderProgramObject);
         glGetProgramiv(shaderProgramObject, GL_ATTACHED_SHADERS, &shader_count);
 
         p_shaders = (GLuint*)malloc(shader_count * sizeof(GLuint));
         memset((void*)p_shaders, 0, shader_count * sizeof(GLuint));
-
+    
         glGetAttachedShaders(shaderProgramObject, shader_count, &shader_count, p_shaders);
 
-        for(GLsizei i = 0; i < shader_count; i++)
+        for(GLsizei i = 0; i < shader_count; i++)   
         {
             glDetachShader(shaderProgramObject, p_shaders[i]);
             glDeleteShader(p_shaders[i]);
@@ -684,7 +914,7 @@ void UnInitialize(void)
 
         free(p_shaders);
         p_shaders = NULL;
-    
+
         glDeleteProgram(shaderProgramObject);
         shaderProgramObject = 0;
         glUseProgram(0);

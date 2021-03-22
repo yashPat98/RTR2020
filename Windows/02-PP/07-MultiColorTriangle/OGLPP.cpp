@@ -3,8 +3,8 @@
 #include <stdio.h>                 //C header 
 #include <gl/glew.h>               //OpenGL extension wrangler (must be included before gl.h)
 #include <gl/gl.h>                 //OpenGL header
-#include "vmath.h"                 //Maths header     
-#include "RESOURCES.h"             //Resources header    
+#include "vmath.h"                 //Maths header
+#include "RESOURCES.h"             //Resources header
 
 //import libraries
 #pragma comment(lib, "user32.lib")
@@ -36,27 +36,28 @@ enum
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
 
 //global variables
-HWND   ghwnd  = NULL;                   //handle to a window
-HDC    ghdc   = NULL;                   //handle to a device context
-HGLRC  ghrc   = NULL;                   //handle to a rendering context
+HWND   ghwnd  = NULL;              //handle to a window
+HDC    ghdc   = NULL;              //handle to a device context
+HGLRC  ghrc   = NULL;              //handle to a rendering context
 
-DWORD dwStyle = NULL;                   //window style
-WINDOWPLACEMENT wpPrev;                 //structure for holding previous window position
+DWORD dwStyle = NULL;              //window style
+WINDOWPLACEMENT wpPrev;            //structure for holding previous window position
 
-bool gbActiveWindow = false;            //flag indicating whether window is active or not
-bool gbFullscreen = false;              //flag indicating whether window is fullscreen or not
+bool gbActiveWindow = false;       //flag indicating whether window is active or not
+bool gbFullscreen = false;         //flag indicating whether window is fullscreen or not
 
-FILE*  gpFile = NULL;                   //log file
+FILE*  gpFile = NULL;              //log file
 
-GLuint vertexShaderObject;              //handle to vertex shader object
-GLuint fragmentShaderObject;            //handle to fragment shader object
-GLuint shaderProgramObject;             //handle to shader program object
+GLuint vertexShaderObject;         //handle to vertex shader object
+GLuint fragmentShaderObject;       //handle to fragment shader object
+GLuint shaderProgramObject;        //handle to shader program object
 
-GLuint vao;                            
-GLuint vbo_position;                             
-GLuint mvpMatrixUniform;                
+GLuint vao;                        //handle to vertex array object for triangle
+GLuint vbo_position;               //handle to vertex buffer object for vertices 
+GLuint vbo_color;                  //handle to vertex buffer object for colors
+GLuint mvpMatrixUniform;                 
 
-mat4 orthographicProjectionMatrix;
+mat4 perspectiveProjectionMatrix;  
 
 //windows entry point function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -69,7 +70,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
     WNDCLASSEX wndclass;                                   //structure holding window class attributes
     MSG msg;                                               //structure holding message attributes
     HWND hwnd;                                             //handle to a window
-    TCHAR szAppName[] = TEXT("Ortho");                     //name of window class
+    TCHAR szAppName[] = TEXT("Perspective");               //name of window class
 
     int cxScreen, cyScreen;                                //screen width and height for centering window
     int init_x, init_y;                                    //top-left coordinates of centered window
@@ -382,6 +383,8 @@ void Initialize(void)
         fprintf(gpFile, "%s\n", glGetStringi(GL_EXTENSIONS, i));
     }
 
+    //setup render scene
+
     //--- Vertex Shader ---
 
     //create shader
@@ -389,19 +392,22 @@ void Initialize(void)
 
     //shader source code
     const GLchar* vertexShaderSourceCode = 
-        "#version 450 core"                                             \
-        "\n"                                                            \
-        "in vec4 vPosition;"                                            \
-        "uniform mat4 u_mvpMatrix;"                                     \
-        "void main(void)"                                               \
-        "{"                                                             \
-        "   gl_Position = u_mvpMatrix * vPosition;"                     \
+        "#version 450 core"                                         \
+        "\n"                                                        \
+        "in vec4 vPosition;"                                        \
+        "in vec4 vColor;"                                           \
+        "uniform mat4 u_mvpMatrix;"                                 \
+        "out vec4 out_color;"                                       \
+        "void main(void)"                                           \
+        "{"                                                         \
+        "   gl_Position = u_mvpMatrix * vPosition;"                 \
+        "   out_color = vColor;"                                    \
         "}";
-    
+
     //provide source code to shader object
     glShaderSource(vertexShaderObject, 1, (const GLchar**)&vertexShaderSourceCode, NULL);
 
-    //compile shader
+    //compile shader 
     glCompileShader(vertexShaderObject);
 
     //shader compilation error checking
@@ -416,7 +422,7 @@ void Initialize(void)
         if(infoLogLength > 0)
         {
             szInfoLog = (GLchar*)malloc(sizeof(GLchar) * infoLogLength);
-            if(infoLogLength != NULL)
+            if(szInfoLog != NULL)
             {
                 GLsizei written;
                 glGetShaderInfoLog(vertexShaderObject, infoLogLength, &written, szInfoLog);
@@ -425,7 +431,7 @@ void Initialize(void)
                 DestroyWindow(ghwnd);
             }
         }
-    }
+    } 
 
     fprintf(gpFile, "\n----- Vertex Shader Compiled Successfully -----\n");
 
@@ -436,17 +442,18 @@ void Initialize(void)
 
     //shader source code
     const GLchar* fragmentShaderSourceCode = 
-        "#version 450 core"                                         \
-        "\n"                                                        \
-        "out vec4 FragColor;"                                       \
-        "void main(void)"                                           \
-        "{"                                                         \
-        "   FragColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);"              \
+        "#version 450 core"                             \
+        "\n"                                            \
+        "in vec4 out_color;"                            \
+        "out vec4 FragColor;"                           \
+        "void main(void)"                               \
+        "{"                                             \
+        "   FragColor = out_color;"                     \
         "}";
 
-    //provide source code to shader object
+    //provide source code to shader object 
     glShaderSource(fragmentShaderObject, 1, (const GLchar**)&fragmentShaderSourceCode, NULL);
- 
+
     //compile shader
     glCompileShader(fragmentShaderObject);
 
@@ -483,15 +490,18 @@ void Initialize(void)
     glAttachShader(shaderProgramObject, fragmentShaderObject);
 
     //binding of shader program object with vertex shader position attribute
-    glBindAttribLocation(shaderProgramObject, AMC_ATTRIBUTE_POSITION, "vPosition");
+    glBindAttribLocation(shaderProgramObject, AMC_ATTRIBUTE_POSITION, "vPositon");
 
-    //link shader program
+    //binding of shader program object with vertex shader color attribute
+    glBindAttribLocation(shaderProgramObject, AMC_ATTRIBUTE_COLOR, "vColor");
+
+    //link shader program 
     glLinkProgram(shaderProgramObject);
-    
+
     //shader linking error checking
     GLint shaderProgramLinkStatus = 0;
     glGetProgramiv(shaderProgramObject, GL_LINK_STATUS, &shaderProgramLinkStatus);
-    if(shaderProgramLinkStatus > 0)
+    if(shaderProgramLinkStatus == GL_FALSE)
     {
         glGetProgramiv(shaderProgramObject, GL_INFO_LOG_LENGTH, &infoLogLength);
         if(infoLogLength > 0)
@@ -510,14 +520,22 @@ void Initialize(void)
     fprintf(gpFile, "----- Shader Program Linked Successfully -----\n");
 
     //get MVP uniform location
-    mvpMatrixUniform = glGetUniformLocation(shaderProgramObject, "u_mvpMatrix");
+    mvpMatrixUniform = glGetUniformLocation(shaderProgramObject, "u_mvpMatrix"); 
 
     //vertex data
     const GLfloat triangleVertices[] = 
     {
-        0.0f, 50.0f, 0.0f,                  
-        -50.0f, -50.0f, 0.0f,              
-        50.0f, -50.0f, 0.0f
+        0.0f, 1.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f
+    };
+
+    //color data
+    const GLfloat triangleColor[] =
+    {
+        1.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 1.0f
     };
 
     //setup vao and vbo
@@ -530,6 +548,13 @@ void Initialize(void)
 
     glVertexAttribPointer(AMC_ATTRIBUTE_POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(AMC_ATTRIBUTE_POSITION);
+
+    glGenBuffers(1, &vbo_color);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_color);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(triangleColor), triangleColor, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(AMC_ATTRIBUTE_COLOR, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(AMC_ATTRIBUTE_COLOR);
 
     //unbind buffers
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -550,8 +575,8 @@ void Initialize(void)
     //set clearing color
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  
 
-    //set orthographic projection matrix to identity
-    orthographicProjectionMatrix = mat4::identity();
+    //set perspective projection matrix to identity
+    perspectiveProjectionMatrix = mat4::identity();
 
     //warm-up  call
     Resize(WIN_WIDTH, WIN_HEIGHT);
@@ -568,24 +593,7 @@ void Resize(int width, int height)
     //set viewport transformation
     glViewport(0, 0, (GLsizei)width, (GLsizei)height);
 
-    if(width <= height)
-    {
-        orthographicProjectionMatrix = vmath::ortho( -100.0f,                           //left
-                                                      100.0f,                           //right
-                                                     -100.0f * (height / width),        //bottom
-                                                      100.0f * (height / width),        //top
-                                                     -100.0f,                           //near
-                                                      100.0f );                         //far
-    }
-    else
-    {
-        orthographicProjectionMatrix = vmath::ortho( -100.0f * (width / height),        //left
-                                                      100.0f * (width / height),        //right
-                                                     -100.0f,                           //bottom
-                                                      100.0f,                           //top
-                                                     -100.0f,                           //near
-                                                      100.0f );                         //far
-    }
+    perspectiveProjectionMatrix = vmath::perspective(45.0f, (float)width / (float)height, 0.1f, 100.0f);
 }
 
 void Display(void)
@@ -593,25 +601,34 @@ void Display(void)
     //variable declarations
     mat4 modelViewMatrix;
     mat4 modelViewProjectionMatrix;
+    mat4 translateMatrix;
 
     //code
+    //clear the color buffer and depth buffer with currrent 
+    //clearing values (set up in initilaize)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    //start using OpenGL program object 
+    //start using OpenGL program object
     glUseProgram(shaderProgramObject);
 
     //OpenGL Drawing
-    //set modelview and modelviewprojection matrices to identity
+    //set modelview, modelviewprojection & translate matrices to identity
     modelViewMatrix = mat4::identity();
     modelViewProjectionMatrix = mat4::identity();
+    translateMatrix = mat4::identity();
 
-    //multiply orthographic and modelview matrix to get modelviewprojection matrix
-    modelViewProjectionMatrix = orthographicProjectionMatrix * modelViewMatrix;
+    //translate modelview matrix
+    translateMatrix = vmath::translate(0.0f, 0.0f, -3.0f);
+    modelViewMatrix = translateMatrix;
 
-    //pass above modelviewprojection matrix to u_mvpMatrix in vertex shader
+    //multiply the modelview and perspective projection matrix to get modelviewprojection matrix 
+    modelViewProjectionMatrix = perspectiveProjectionMatrix * modelViewMatrix;
+
+    //pass above modelviewprojection matrix to the vertex shader in
+    //"u_mvpMatrix" shader variable
     glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, modelViewProjectionMatrix);
 
-    //bind vao 
+    //bind vao
     glBindVertexArray(vao);
 
     //draw
@@ -623,6 +640,7 @@ void Display(void)
     //stop using OpenGL program object
     glUseProgram(0);
 
+    //swap the buffers
     SwapBuffers(ghdc);
 }
 
@@ -661,21 +679,27 @@ void UnInitialize(void)
         vbo_position = 0;
     }
 
+    if(vbo_color)
+    {
+        glDeleteBuffers(1, &vbo_color);
+        vbo_color = 0;
+    }
+
     //safe shader cleanup
     if(shaderProgramObject)
     {
         GLsizei shader_count;
         GLuint* p_shaders = NULL;
 
-        glUseProgram(shaderProgramObject);        
+        glUseProgram(shaderProgramObject);
         glGetProgramiv(shaderProgramObject, GL_ATTACHED_SHADERS, &shader_count);
 
         p_shaders = (GLuint*)malloc(shader_count * sizeof(GLuint));
         memset((void*)p_shaders, 0, shader_count * sizeof(GLuint));
-
+    
         glGetAttachedShaders(shaderProgramObject, shader_count, &shader_count, p_shaders);
 
-        for(GLsizei i = 0; i < shader_count; i++)
+        for(GLsizei i = 0; i < shader_count; i++)   
         {
             glDetachShader(shaderProgramObject, p_shaders[i]);
             glDeleteShader(p_shaders[i]);
@@ -684,7 +708,7 @@ void UnInitialize(void)
 
         free(p_shaders);
         p_shaders = NULL;
-    
+
         glDeleteProgram(shaderProgramObject);
         shaderProgramObject = 0;
         glUseProgram(0);

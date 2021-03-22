@@ -1,0 +1,5 @@
+#include "RESOURCES.h"
+
+MYICON          ICON     YIP.ico
+STONE_BITMAP    BITMAP   textures/Stone.bmp
+KUNDALI_BITMAP  BITMAP   textures/Vijay_Kundali.bmp
