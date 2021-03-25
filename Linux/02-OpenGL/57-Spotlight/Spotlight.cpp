@@ -33,8 +33,8 @@ GLfloat lightModelAmbient[] = {0.5f, 0.5f, 0.5f, 1.0f};
 GLfloat lightAmbient[]      = {0.0f, 0.0f, 0.0f, 1.0f};
 GLfloat lightDiffuse[]      = {1.0f, 1.0f, 1.0f, 1.0f};
 GLfloat lightSpecular[]     = {1.0f, 1.0f, 1.0f, 1.0f};
-GLfloat lightPosition[]     = {2.0f, 0.0f, 2.0f, 1.0f};
-GLfloat spotDirection[]     = {-0.2f, 0.0f, -1.0f};
+GLfloat lightPosition[]     = {0.0f, 10.0f, 0.0f, 1.0f};
+GLfloat spotDirection[]     = {0.0f, -1.0f, -0.8f};
 
 GLUquadric* quadric = NULL;
 
@@ -302,7 +302,7 @@ void Initialize(void)
     glLightfv(GL_LIGHT1, GL_POSITION, lightPosition);
     
     glLightf(GL_LIGHT1, GL_CONSTANT_ATTENUATION, 1.5f);
-    glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 10.0f);
+    glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 12.0f);
     glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, spotDirection);
     glLightf(GL_LIGHT1, GL_SPOT_EXPONENT, 2.0f);
     
@@ -333,10 +333,20 @@ void Render(void)
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     
-    glTranslatef(0.0f,  0.0f, -5.0f);
-
-    quadric = gluNewQuadric();
-    gluSphere(quadric, 1.5f, 200, 200);
+    gluLookAt(0.0f, 0.0f, -8.0f,
+              0.0f, 0.0f, 0.0f, 
+              0.0f, 1.0f, 0.0f);
+    for(GLfloat i = -5.0f; i < 5.0f; i++)
+    {
+        for(GLfloat j = -5.0f; j < 5.0f; j += 2.0f)
+        {
+            glPushMatrix();
+                glTranslatef(i, -1.0f, j);
+                quadric = gluNewQuadric();
+                gluSphere(quadric, 0.4f, 30, 30);
+            glPopMatrix();
+        }
+    }
     
     glXSwapBuffers(gpDisplay, gWindow);
 }
