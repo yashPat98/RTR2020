@@ -5,6 +5,7 @@
 #include <gl/gl.h>                 //OpenGL header
 #include "vmath.h"                 //Maths header
 #include "RESOURCES.h"             //Resources header
+#include "Sphere.h"                //Sphere header
 
 //import libraries
 #pragma comment(lib, "user32.lib")
@@ -12,6 +13,7 @@
 #pragma comment(lib, "kernel32.lib")
 #pragma comment(lib, "glew32.lib")
 #pragma comment(lib, "OpenGL32.lib")
+#pragma comment(lib, "Sphere.lib")
 
 //symbolic constants
 #define WIN_WIDTH  800             //initial width of window  
@@ -52,36 +54,63 @@ GLuint vertexShaderObject;         //handle to vertex shader object
 GLuint fragmentShaderObject;       //handle to fragment shader object
 GLuint shaderProgramObject;        //handle to shader program object
 
-GLuint vao_pyramid;               //handle to vertex array object for pyramid
-GLuint vbo_pyramid_position;      //handle to vertex buffer object for vertices of pyramid
-GLuint vbo_pyramid_color;         //handle to vertex buffer object for colors of pyramid
+GLuint vao_sphere;                 //handle to vertex array object for sphere
+GLuint vbo_sphere_position;        //handle to vertex buffer object for vertices of sphere
+GLuint vbo_sphere_normal;          //handle to vertex buffer object for normals of sphere
+GLuint vbo_sphere_texcoord;        //handle to vertex buffer object for texcoords of sphere
+GLuint vbo_sphere_elements;        //handle to vertex buffer object for indices 
 
-GLuint vao_cube;                  //handle to vertex array object for cube
-GLuint vbo_cube_position;         //handle to vertex buffer object for vertices of cube
-GLuint vbo_cube_color;            //handle to vertex buffer object for colors of cube
-
-GLuint mvpMatrixUniform;                 
+GLuint modelMatrixUniform;
+GLuint viewMatrixUniform;
+GLuint perspectiveProjectionMatrixUniform;
+GLuint LaUniform;
+GLuint LdUniform;
+GLuint LsUniform;
+GLuint lightPositionUniform;
+GLuint KaUniform;
+GLuint KdUniform;
+GLuint KsUniform;
+GLuint materialShininessUniform;
+GLuint LKeyPressedUniform;
+               
 mat4 perspectiveProjectionMatrix;  
 
-GLfloat pyramid_rotation_angle = 0.0f;
-GLfloat cube_rotation_angle = 0.0f;
+vec4 La;
+vec4 Ld;
+vec4 Ls;
+vec4 lightPosition;
+
+vec4 Ka;
+vec4 Kd;
+vec4 Ks;
+float materialShininess;
+
+int LKeyPressed;
+
+GLfloat sphere_vertices[1146];
+GLfloat sphere_normals[1146];
+GLfloat sphere_texcoords[764];
+unsigned short sphere_elements[2280];
+
+int gNumVertices;
+int gNumElements;
 
 //windows entry point function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
 {
     //function declarations
-    void Initialize(void);                                 //initialize OpenGL state machine
-    void Display(void);                                    //render scene
+    void Initialize(void);                                      //initialize OpenGL state machine
+    void Display(void);                                         //render scene
 
     //variable declarations
-    WNDCLASSEX wndclass;                                   //structure holding window class attributes
-    MSG msg;                                               //structure holding message attributes
-    HWND hwnd;                                             //handle to a window
-    TCHAR szAppName[] = TEXT("3D Animation");              //name of window class
+    WNDCLASSEX wndclass;                                        //structure holding window class attributes
+    MSG msg;                                                    //structure holding message attributes
+    HWND hwnd;                                                  //handle to a window
+    TCHAR szAppName[] = TEXT("OpenGL : Per Vertex Shading");    //name of window class
 
-    int cxScreen, cyScreen;                                //screen width and height for centering window
-    int init_x, init_y;                                    //top-left coordinates of centered window
-    bool bDone = false;                                    //flag indicating whether or not to exit from game loop
+    int cxScreen, cyScreen;                                     //screen width and height for centering window
+    int init_x, init_y;                                         //top-left coordinates of centered window
+    bool bDone = false;                                         //flag indicating whether or not to exit from game loop
 
     //code
     //create/open  'log.txt' file
@@ -219,6 +248,26 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
             }
             break;
         
+        case WM_CHAR:
+            switch(wParam)
+            {
+                case 'L':
+                case 'l':
+                    if(LKeyPressed == 0)
+                    {
+                        LKeyPressed = 1;
+                    }
+                    else
+                    {
+                        LKeyPressed = 0;
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
         case WM_CLOSE:                           //event : window is closed from sysmenu or close button
             DestroyWindow(hwnd);
             break;
@@ -399,16 +448,43 @@ void Initialize(void)
 
     //shader source code
     const GLchar* vertexShaderSourceCode = 
-        "#version 450 core"                                         \
-        "\n"                                                        \
-        "in vec4 vPosition;"                                        \
-        "in vec4 vColor;"                                           \
-        "uniform mat4 u_mvpMatrix;"                                 \
-        "out vec4 out_color;"                                       \
-        "void main(void)"                                           \
-        "{"                                                         \
-        "   gl_Position = u_mvpMatrix * vPosition;"                 \
-        "   out_color = vColor;"                                    \
+        "#version 450 core"                                                                                                     \
+        "\n"                                                                                                                    \
+        "in vec4 vPosition;"                                                                                                    \
+        "in vec3 vNormal;"                                                                                                      \
+        "uniform mat4 u_modelMatrix;"                                                                                           \
+        "uniform mat4 u_viewMatrix;"                                                                                            \
+        "uniform mat4 u_perspectiveProjectionMatrix;"                                                                           \
+        "uniform vec3 u_La;"                                                                                                    \
+        "uniform vec3 u_Ld;"                                                                                                    \
+        "uniform vec3 u_Ls;"                                                                                                    \
+        "uniform vec4 u_lightPosition;"                                                                                         \
+        "uniform vec3 u_Ka;"                                                                                                    \
+        "uniform vec3 u_Kd;"                                                                                                    \
+        "uniform vec3 u_Ks;"                                                                                                    \
+        "uniform float u_materialShininess;"                                                                                    \
+        "uniform int u_LKeyPressed;"                                                                                            \
+        "out vec3 phong_ads_light;"                                                                                             \
+        "void main(void)"                                                                                                       \
+        "{"                                                                                                                     \
+        "   if(u_LKeyPressed == 1)"                                                                                             \
+        "   {"                                                                                                                  \
+        "       vec4 eye_coords = u_viewMatrix * u_modelMatrix * vPosition;"                                                    \
+        "       mat3 normal_matrix = mat3(transpose(inverse(u_viewMatrix * u_modelMatrix)));"                                   \
+        "       vec3 transformed_normal = normalize(normal_matrix * vNormal);"                                                  \
+        "       vec3 light_direction = normalize(vec3(u_lightPosition - eye_coords));"                                          \
+        "       vec3 reflection_vector = reflect(-light_direction, transformed_normal);"                                        \
+        "       vec3 view_vector = normalize(-eye_coords.xyz);"                                                                 \
+        "       vec3 ambient = u_La * u_Ka;"                                                                                    \
+        "       vec3 diffuse = u_Ld * u_Kd * max(dot(light_direction, transformed_normal), 0.0f);"                              \
+        "       vec3 specular = u_Ls * u_Ks * pow(max(dot(reflection_vector, view_vector), 0.0f), u_materialShininess);"        \
+        "       phong_ads_light = ambient + diffuse + specular;"                                                                \
+        "   }"                                                                                                                  \
+        "   else"                                                                                                               \
+        "   {"                                                                                                                  \
+        "       phong_ads_light = vec3(1.0f, 1.0f, 1.0f);"                                                                      \
+        "   }"                                                                                                                  \
+        "   gl_Position = u_perspectiveProjectionMatrix * u_viewMatrix * u_modelMatrix * vPosition;"                            \
         "}";
 
     //provide source code to shader object
@@ -449,13 +525,13 @@ void Initialize(void)
 
     //shader source code
     const GLchar* fragmentShaderSourceCode = 
-        "#version 450 core"                             \
-        "\n"                                            \
-        "in vec4 out_color;"                            \
-        "out vec4 FragColor;"                           \
-        "void main(void)"                               \
-        "{"                                             \
-        "   FragColor = out_color;"                     \
+        "#version 450 core"                                 \
+        "\n"                                                \
+        "in vec3 phong_ads_light;"                          \
+        "out vec4 FragColor;"                               \
+        "void main(void)"                                   \
+        "{"                                                 \
+        "   FragColor = vec4(phong_ads_light, 1.0f);"       \
         "}";
 
     //provide source code to shader object 
@@ -499,8 +575,8 @@ void Initialize(void)
     //binding of shader program object with vertex shader position attribute
     glBindAttribLocation(shaderProgramObject, AMC_ATTRIBUTE_POSITION, "vPositon");
 
-    //binding of shader program object with vertex shader color attribute
-    glBindAttribLocation(shaderProgramObject, AMC_ATTRIBUTE_COLOR, "vColor");
+    //binding of shader program object with vertex shader normal attribute
+    glBindAttribLocation(shaderProgramObject, AMC_ATTRIBUTE_NORMAL, "vNormal");
 
     //link shader program 
     glLinkProgram(shaderProgramObject);
@@ -526,173 +602,63 @@ void Initialize(void)
 
     fprintf(gpFile, "----- Shader Program Linked Successfully -----\n");
 
-    //get MVP uniform location
-    mvpMatrixUniform = glGetUniformLocation(shaderProgramObject, "u_mvpMatrix"); 
+    //get uniform locations
+    modelMatrixUniform = glGetUniformLocation(shaderProgramObject, "u_modelMatrix");
+    viewMatrixUniform = glGetUniformLocation(shaderProgramObject, "u_viewMatrix");
+    perspectiveProjectionMatrixUniform = glGetUniformLocation(shaderProgramObject, "u_perspectiveProjectionMatrix");
 
-    //pyramid vertex, color data
-    const GLfloat pyramidVertices[] =
-    {
-        //near
-        0.0f, 1.0f, 0.0f,
-        -1.0f, -1.0f, 1.0f,
-        1.0f, -1.0f, 1.0f,
+    LaUniform = glGetUniformLocation(shaderProgramObject, "u_La");
+    LdUniform = glGetUniformLocation(shaderProgramObject, "u_Ld");
+    LsUniform = glGetUniformLocation(shaderProgramObject, "u_Ls");
+    lightPositionUniform = glGetUniformLocation(shaderProgramObject, "u_lightPosition");
 
-        //right
-        0.0f, 1.0f, 0.0f,
-        1.0f, -1.0f, 1.0f,
-        1.0f, -1.0f, -1.0f,
-    
-        //far
-        0.0f, 1.0f, 0.0f,
-        1.0f, -1.0f, -1.0f,
-        -1.0f, -1.0f, -1.0f,
+    KaUniform = glGetUniformLocation(shaderProgramObject, "u_Ka");
+    KdUniform = glGetUniformLocation(shaderProgramObject, "u_Kd");
+    KsUniform = glGetUniformLocation(shaderProgramObject, "u_Ks");
+    materialShininessUniform = glGetUniformLocation(shaderProgramObject, "u_materialShininess");
 
-        //left
-        0.0f, 1.0f, 0.0f,
-        -1.0f, -1.0f, -1.0f,
-        -1.0f, -1.0f, 1.0f
-    };
+    LKeyPressedUniform = glGetUniformLocation(shaderProgramObject, "u_LKeyPressed");
 
-    const GLfloat pyramidColor[] =
-    {
-        //near 
-        1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f,
+    //get buffer data for sphere
+    getSphereVertexData(sphere_vertices, sphere_normals, sphere_texcoords, sphere_elements);
 
-        //right
-        1.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 1.0f,
-        0.0f, 1.0f, 0.0f,
-
-        //far
-        1.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f, 1.0f,
-
-        //left
-        1.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 1.0f,
-        0.0f, 1.0f, 0.0f
-    };
-
-    const GLfloat cubeVertices[] = 
-    {
-        //near 
-        1.0f, 1.0f, 1.0f,
-        -1.0f, 1.0f, 1.0f,
-        -1.0f, -1.0f, 1.0f, 
-        1.0f, -1.0f, 1.0f,
-
-        //right
-        1.0f, 1.0f, -1.0f,
-        1.0f, 1.0f, 1.0f,
-        1.0f, -1.0f, 1.0f,
-        1.0f, -1.0f, -1.0f,
-
-        //far
-        -1.0f, 1.0f, -1.0f,
-        1.0f, 1.0f, -1.0f,
-        1.0f, -1.0f, -1.0f,
-        -1.0f, -1.0f, -1.0f,
-
-        //left
-        -1.0f, 1.0f, -1.0f,
-        -1.0f, 1.0f, 1.0f, 
-        -1.0f, -1.0f, 1.0f,
-        -1.0f, -1.0f, -1.0f,
-
-        //top
-        1.0f, 1.0f, -1.0f,
-        -1.0f, 1.0f, -1.0f,
-        -1.0f, 1.0f, 1.0f,
-        1.0f, 1.0f, 1.0f,
-
-        //bottom
-        -1.0f, -1.0f, -1.0f,
-        1.0f, -1.0f, -1.0f,
-        1.0f, -1.0f, 1.0f,
-        -1.0f, -1.0f, 1.0f
-    };
-
-    const GLfloat cubeColor[] = 
-    {
-        //near
-        1.0f, 0.0f, 0.0f,
-        1.0f, 0.0f, 0.0f,
-        1.0f, 0.0f, 0.0f,
-        1.0f, 0.0f, 0.0f,
-
-        //right 
-        0.0f, 1.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
-
-        //far
-        0.0f, 0.0f, 1.0f,
-        0.0f, 0.0f, 1.0f,
-        0.0f, 0.0f, 1.0f,
-        0.0f, 0.0f, 1.0f,
-
-        //left
-        1.0f, 0.0f, 1.0f,
-        1.0f, 0.0f, 1.0f,
-        1.0f, 0.0f, 1.0f,
-        1.0f, 0.0f, 1.0f,
-
-        //top
-        1.0f, 1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f,
-
-        //bottom
-        0.0f, 1.0f, 1.0f,
-        0.0f, 1.0f, 1.0f,
-        0.0f, 1.0f, 1.0f,
-        0.0f, 1.0f, 1.0f
-    };
- 
-    //setup vao and vbo for triangle
-    glGenVertexArrays(1, &vao_pyramid);
-    glBindVertexArray(vao_pyramid);
-
-    glGenBuffers(1, &vbo_pyramid_position);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_pyramid_position);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(pyramidVertices), pyramidVertices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(AMC_ATTRIBUTE_POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-    glEnableVertexAttribArray(AMC_ATTRIBUTE_POSITION);
-
-    glGenBuffers(1, &vbo_pyramid_color);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_pyramid_color);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(pyramidColor), pyramidColor, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(AMC_ATTRIBUTE_COLOR, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-    glEnableVertexAttribArray(AMC_ATTRIBUTE_COLOR);
-
-    //unbind buffers
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+    gNumVertices = getNumberOfSphereVertices();
+    gNumElements = getNumberOfSphereElements();
 
     //setup vao and vbo for square
-    glGenVertexArrays(1, &vao_cube);
-    glBindVertexArray(vao_cube);
+    glGenVertexArrays(1, &vao_sphere);
+    glBindVertexArray(vao_sphere);
 
-    glGenBuffers(1, &vbo_cube_position);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_cube_position);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
+    glGenBuffers(1, &vbo_sphere_position);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_sphere_position);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(sphere_vertices), sphere_vertices, GL_STATIC_DRAW);
 
     glVertexAttribPointer(AMC_ATTRIBUTE_POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(AMC_ATTRIBUTE_POSITION);
 
-    glGenBuffers(1, &vbo_cube_color);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_cube_color);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeColor), cubeColor, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    glVertexAttribPointer(AMC_ATTRIBUTE_COLOR, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-    glEnableVertexAttribArray(AMC_ATTRIBUTE_COLOR);
+    glGenBuffers(1, &vbo_sphere_normal);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_sphere_normal);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(sphere_normals), sphere_normals, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(AMC_ATTRIBUTE_NORMAL, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(AMC_ATTRIBUTE_NORMAL);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glGenBuffers(1, &vbo_sphere_texcoord);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_sphere_texcoord);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(sphere_texcoords), sphere_texcoords, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(AMC_ATTRIBUTE_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(AMC_ATTRIBUTE_TEXCOORD);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glGenBuffers(1, &vbo_sphere_elements);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo_sphere_elements);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(sphere_elements), sphere_elements, GL_STATIC_DRAW);
 
     //unbind buffers
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -715,6 +681,18 @@ void Initialize(void)
     //set perspective projection matrix to identity
     perspectiveProjectionMatrix = mat4::identity();
 
+    //initialize light properties
+    La = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    Ld = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    Ls = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    lightPosition = vec4(100.0f, 100.0f, 100.0f, 1.0f);
+
+    //initialize material properties
+    Ka = vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    Kd = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    Ks = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    materialShininess = 50.0f;
+
     //warm-up  call
     Resize(WIN_WIDTH, WIN_HEIGHT);
 }
@@ -736,97 +714,58 @@ void Resize(int width, int height)
 void Display(void)
 {
     //variable declarations
-    mat4 modelViewMatrix;
-    mat4 modelViewProjectionMatrix;
-    mat4 translateMatrix;
-    mat4 rotationMatrix;
-    mat4 scaleMatrix;
+    mat4 modelMatrix;
+    mat4 viewMatrix;
 
     //code
     //clear the color buffer and depth buffer with currrent 
     //clearing values (set up in initilaize)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    //start using OpenGL program object
     glUseProgram(shaderProgramObject);
 
-    //OpenGL Drawing
-    
-    //--- Pyramid ---
+    //set matrices to identity
+    modelMatrix = mat4::identity();
+    viewMatrix = mat4::identity();
 
-    //set modelview, modelviewprojection & translate matrices to identity
-    modelViewMatrix = mat4::identity();
-    modelViewProjectionMatrix = mat4::identity();
-    translateMatrix = mat4::identity();
+    //pass the uniform variables to vertex shader
+    if(LKeyPressed == 1)
+    {
+        glUniform1i(LKeyPressedUniform, 1);
 
-    //translate and rotate modelview matrix
-    translateMatrix = vmath::translate(-1.5f, 0.0f, -6.0f);
-    rotationMatrix = vmath::rotate(pyramid_rotation_angle, 0.0f, 1.0f, 0.0f);
-    modelViewMatrix = translateMatrix * rotationMatrix;
+        glUniform3fv(LaUniform, 1, La);
+        glUniform3fv(LdUniform, 1, Ld);
+        glUniform3fv(LsUniform, 1, Ls);
+        glUniform4fv(lightPositionUniform, 1, lightPosition);
 
-    //multiply the modelview and perspective projection matrix to get modelviewprojection matrix 
-    modelViewProjectionMatrix = perspectiveProjectionMatrix * modelViewMatrix;
+        glUniform3fv(KaUniform, 1, Ka);
+        glUniform3fv(KdUniform, 1, Kd);
+        glUniform3fv(KsUniform, 1, Ks);
+        glUniform1f(materialShininessUniform, materialShininess);
+    }
+    else
+    {
+        glUniform1i(LKeyPressedUniform, 0);
+    }
 
-    //pass above modelviewprojection matrix to the vertex shader in
-    //"u_mvpMatrix" shader variable
-    glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, modelViewProjectionMatrix);
+    //translate model matrix
+    modelMatrix = vmath::translate(0.0f, 0.0f, -3.0f);
 
-    //bind vao for triangle 
-    glBindVertexArray(vao_pyramid);
+    //pass model, view and projection matrices to shader uniform variables
+    glUniformMatrix4fv(modelMatrixUniform, 1, GL_FALSE, modelMatrix);
+    glUniformMatrix4fv(viewMatrixUniform, 1, GL_FALSE, viewMatrix);
+    glUniformMatrix4fv(perspectiveProjectionMatrixUniform, 1, GL_FALSE, perspectiveProjectionMatrix);
 
-    //draw
-    glDrawArrays(GL_TRIANGLES, 0, 12);
+    //bind vao
+    glBindVertexArray(vao_sphere);
 
-    //unbind vao
+    //draw sphere
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo_sphere_elements);
+    glDrawElements(GL_TRIANGLES, gNumElements, GL_UNSIGNED_SHORT, (void*)0);
+
+    //unbind 
     glBindVertexArray(0);
-
-    //--- Cube ---
-
-    //set modelview, modelviewprojection and translate matrix to identity
-    modelViewMatrix = mat4::identity();
-    modelViewProjectionMatrix = mat4::identity();
-    translateMatrix = mat4::identity();
-    rotationMatrix = mat4::identity();
-    scaleMatrix = mat4::identity();
-
-    //translate modelview matrix
-    translateMatrix = vmath::translate(1.5f, 0.0f, -6.0f);
-    scaleMatrix = vmath::scale(0.75f, 0.75f, 0.75f);
-    rotationMatrix = vmath::rotate(cube_rotation_angle, 1.0f, 0.0f, 0.0f);
-    modelViewMatrix = translateMatrix * scaleMatrix * rotationMatrix;
-
-    //multiply the modelview and perspective projection matrix to get modelviewprojection matrix 
-    modelViewProjectionMatrix = perspectiveProjectionMatrix * modelViewMatrix;
-
-    //pass above modelviewprojection matrix to the vertex shader in
-    //"u_mvpMatrix" shader variable
-    glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, modelViewProjectionMatrix);
-
-    //bind vao for square
-    glBindVertexArray(vao_cube);
-
-    //draw
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-    glDrawArrays(GL_TRIANGLE_FAN, 4, 4);
-    glDrawArrays(GL_TRIANGLE_FAN, 8, 4);
-    glDrawArrays(GL_TRIANGLE_FAN, 12, 4);
-    glDrawArrays(GL_TRIANGLE_FAN, 16, 4);
-    glDrawArrays(GL_TRIANGLE_FAN, 20, 4);
-
-    //unbind vao 
-    glBindVertexArray(0);
-
-    //stop using OpenGL program object
     glUseProgram(0);
-
-    //update 
-    pyramid_rotation_angle += 0.1f;
-    if(pyramid_rotation_angle >= 360.0f)
-        pyramid_rotation_angle = 0.0f;
-    
-    cube_rotation_angle += 0.1f;
-    if(cube_rotation_angle >= 360.0f)
-        cube_rotation_angle = 0.0f;
 
     //swap the buffers
     SwapBuffers(ghdc);
@@ -853,42 +792,29 @@ void UnInitialize(void)
         gbFullscreen = false;
     }
 
-    //release vao & vbo for triangle
-    if(vao_pyramid)
-    {
-        glDeleteVertexArrays(1, &vao_pyramid);
-        vao_pyramid = 0;
-    }
-
-    if(vbo_pyramid_position)
-    {
-        glDeleteBuffers(1, &vbo_pyramid_position);
-        vbo_pyramid_position = 0;
-    }
-
-    if(vbo_pyramid_color)
-    {
-        glDeleteBuffers(1, &vbo_pyramid_color);
-        vbo_pyramid_color = 0;
-    }
-
     //release vao and vbo for square
-    if(vao_cube)
+    if(vao_sphere)
     {
-        glDeleteVertexArrays(1, &vao_cube);
-        vao_cube = 0;
+        glDeleteVertexArrays(1, &vao_sphere);
+        vao_sphere = 0;
     }
 
-    if(vbo_cube_position)
+    if(vbo_sphere_position)
     {
-        glDeleteBuffers(1, &vbo_cube_position);
-        vbo_cube_position = 0;
+        glDeleteBuffers(1, &vbo_sphere_position);
+        vbo_sphere_position = 0;
     }
 
-    if(vbo_cube_color)
+    if(vbo_sphere_normal)
     {
-        glDeleteBuffers(1, &vbo_cube_color);
-        vbo_cube_color = 0;
+        glDeleteBuffers(1, &vbo_sphere_normal);
+        vbo_sphere_normal = 0;
+    }
+
+    if(vbo_sphere_texcoord)
+    {
+        glDeleteBuffers(1, &vbo_sphere_texcoord);
+        vbo_sphere_texcoord = 0;
     }
 
     //safe shader cleanup

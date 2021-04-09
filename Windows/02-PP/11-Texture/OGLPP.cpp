@@ -52,13 +52,13 @@ GLuint vertexShaderObject;         //handle to vertex shader object
 GLuint fragmentShaderObject;       //handle to fragment shader object
 GLuint shaderProgramObject;        //handle to shader program object
 
-GLuint vao_pyramid;               //handle to vertex array object for triangle
-GLuint vbo_pyramid_position;      //handle to vertex buffer object for vertices of triangle
-GLuint vbo_pyramid_texture;       //handle to vertex buffer object for texture of triangle
+GLuint vao_pyramid;               //handle to vertex array object for pyramid
+GLuint vbo_pyramid_position;      //handle to vertex buffer object for vertices of pyramid
+GLuint vbo_pyramid_texture;       //handle to vertex buffer object for texture of pyramid
 
-GLuint vao_cube;                 //handle to vertex array object for square
-GLuint vbo_cube_position;        //handle to vertex buffer object for vertices of square
-GLuint vbo_cube_texture;         //handle to vertex buffer object for texture of square
+GLuint vao_cube;                  //handle to vertex array object for cube
+GLuint vbo_cube_position;         //handle to vertex buffer object for vertices of cube
+GLuint vbo_cube_texture;          //handle to vertex buffer object for texture of cube
 
 GLuint mvpMatrixUniform;           
 GLuint textureSamplerUniform;
@@ -866,7 +866,7 @@ void Display(void)
     glBindTexture(GL_TEXTURE_2D, kundali_texture);
     glUniform1i(textureSamplerUniform, 0);
 
-    //bind vao for square
+    //bind vao for cube
     glBindVertexArray(vao_cube);
 
     //draw
