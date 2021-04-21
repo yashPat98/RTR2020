@@ -739,14 +739,14 @@ void Display(void)
     mat4 modelViewMatrix;
     mat4 modelViewProjectionMatrix;
     mat4 translateMatrix;
-    mat4 rotationMatrix;
+    mat4 rotationMatrix_x;
+    mat4 rotationMatrix_y;
+    mat4 rotationMatrix_z;
     mat4 scaleMatrix;
-
+    
     //code
-    //clear the color buffer and depth buffer with currrent 
-    //clearing values (set up in initilaize)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    
     //start using OpenGL program object
     glUseProgram(shaderProgramObject);
 
@@ -758,11 +758,12 @@ void Display(void)
     modelViewMatrix = mat4::identity();
     modelViewProjectionMatrix = mat4::identity();
     translateMatrix = mat4::identity();
-
+    rotationMatrix_y = mat4::identity();
+    
     //translate and rotate modelview matrix
     translateMatrix = vmath::translate(-1.5f, 0.0f, -6.0f);
-    rotationMatrix = vmath::rotate(pyramid_rotation_angle, 0.0f, 1.0f, 0.0f);
-    modelViewMatrix = translateMatrix * rotationMatrix;
+    rotationMatrix_y = vmath::rotate(pyramid_rotation_angle, 0.0f, 1.0f, 0.0f);
+    modelViewMatrix = translateMatrix * rotationMatrix_y;
 
     //multiply the modelview and perspective projection matrix to get modelviewprojection matrix 
     modelViewProjectionMatrix = perspectiveProjectionMatrix * modelViewMatrix;
@@ -786,14 +787,18 @@ void Display(void)
     modelViewMatrix = mat4::identity();
     modelViewProjectionMatrix = mat4::identity();
     translateMatrix = mat4::identity();
-    rotationMatrix = mat4::identity();
+    rotationMatrix_x = mat4::identity();
+    rotationMatrix_y = mat4::identity();
+    rotationMatrix_z = mat4::identity();
     scaleMatrix = mat4::identity();
 
     //translate modelview matrix
     translateMatrix = vmath::translate(1.5f, 0.0f, -6.0f);
     scaleMatrix = vmath::scale(0.75f, 0.75f, 0.75f);
-    rotationMatrix = vmath::rotate(cube_rotation_angle, 1.0f, 0.0f, 0.0f);
-    modelViewMatrix = translateMatrix * scaleMatrix * rotationMatrix;
+    rotationMatrix_x = vmath::rotate(cube_rotation_angle, 1.0f, 0.0f, 0.0f);
+    rotationMatrix_y = vmath::rotate(cube_rotation_angle, 0.0f, 1.0f, 0.0f);
+    rotationMatrix_z = vmath::rotate(cube_rotation_angle, 0.0f, 0.0f, 1.0f);
+    modelViewMatrix = translateMatrix * scaleMatrix * rotationMatrix_x * rotationMatrix_y * rotationMatrix_z;
 
     //multiply the modelview and perspective projection matrix to get modelviewprojection matrix 
     modelViewProjectionMatrix = perspectiveProjectionMatrix * modelViewMatrix;
@@ -820,11 +825,11 @@ void Display(void)
     glUseProgram(0);
 
     //update 
-    pyramid_rotation_angle += 0.1f;
+    pyramid_rotation_angle += 0.5f;
     if(pyramid_rotation_angle >= 360.0f)
         pyramid_rotation_angle = 0.0f;
     
-    cube_rotation_angle += 0.1f;
+    cube_rotation_angle += 0.5f;
     if(cube_rotation_angle >= 360.0f)
         cube_rotation_angle = 0.0f;
 

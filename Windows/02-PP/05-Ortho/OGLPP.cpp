@@ -416,7 +416,7 @@ void Initialize(void)
         if(infoLogLength > 0)
         {
             szInfoLog = (GLchar*)malloc(sizeof(GLchar) * infoLogLength);
-            if(infoLogLength != NULL)
+            if(szInfoLog != NULL)
             {
                 GLsizei written;
                 glGetShaderInfoLog(vertexShaderObject, infoLogLength, &written, szInfoLog);

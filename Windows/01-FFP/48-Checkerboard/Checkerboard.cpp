@@ -371,7 +371,6 @@ void MakeCheckImage(void)
             checkImage[i][j][3] = (GLubyte)255;
         }
     }
-
 }
 
 // --- Resize() --- 

@@ -595,6 +595,7 @@ void Initialize(void)
                 GLsizei written;
                 glGetProgramInfoLog(shaderProgramObject, infoLogLength, &written, szInfoLog);
                 fprintf(gpFile, "Shader Program Link Log : %s\n", szInfoLog);
+                free(szInfoLog);
                 DestroyWindow(ghwnd);
             }
         }

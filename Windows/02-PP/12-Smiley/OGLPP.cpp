@@ -651,40 +651,37 @@ void Resize(int width, int height)
 void Display(void)
 {
     //variable declarations
-    mat4 modelviewMatrix;
-    mat4 modelviewProjectionMatrix;
-
+    mat4 modelViewMatrix;
+    mat4 modelViewProjectionMatrix;
+    mat4 translateMatrix;
+    
     //code
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    //start using OpenGL program object 
+    
+    //start using OpenGL program object
     glUseProgram(shaderProgramObject);
 
     //OpenGL Drawing
-
-    // --- Square ---
-
-    //set matrices to identity
-    modelviewMatrix = mat4::identity();
-    modelviewProjectionMatrix = mat4::identity();
+    //set modelview, modelviewprojection & translate matrices to identity
+    modelViewMatrix = mat4::identity();
+    modelViewProjectionMatrix = mat4::identity();
+    translateMatrix = mat4::identity();
 
     //translate modelview matrix
-    modelviewMatrix = vmath::translate(0.0f, 0.0f, -3.0f);
+    translateMatrix = vmath::translate(0.0f, 0.0f, -3.0f);
+    modelViewMatrix = translateMatrix;
 
-    //multiplay modelview and perspective projection matrix
-    modelviewProjectionMatrix = perspectiveProjectionMatrix * modelviewMatrix;
+    //multiply the modelview and perspective projection matrix to get modelviewprojection matrix 
+    modelViewProjectionMatrix = perspectiveProjectionMatrix * modelViewMatrix;
 
-    //pass above modelviewProjectionMatrix to the vertex shader uniform "u_mvpMatrix"
-    glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, modelviewProjectionMatrix);
+    //pass above modelviewprojection matrix to the vertex shader in
+    //"u_mvpMatrix" shader variable
+    glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, modelViewProjectionMatrix);
 
-    //bind smiley texture
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, smiley_texture);
-    glUniform1i(textureSamplerUniform, 0);
-
-    //bind vao for square
+    //bind vao
     glBindVertexArray(vao_square);
 
+    //draw
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
     //unbind vao

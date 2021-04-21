@@ -850,7 +850,7 @@ void UnInitialize(void)
         vbo_square_texture = 0;
     }
 
-        //safe shader cleanup
+    //safe shader cleanup
     if(shaderProgramObject)
     {
         GLsizei shader_count;
