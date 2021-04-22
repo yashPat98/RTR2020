@@ -1,0 +1,4 @@
+com/example/window/BuildConfig.java
+ com.example.window.BuildConfig
+com/example/window/MainActivity.java
+ com.example.window.MainActivity
