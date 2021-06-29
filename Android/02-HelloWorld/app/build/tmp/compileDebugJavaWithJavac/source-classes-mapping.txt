@@ -1,4 +1,0 @@
-com/rtr/hello/BuildConfig.java
- com.rtr.hello.BuildConfig
-com/rtr/hello/MainActivity.java
- com.rtr.hello.MainActivity

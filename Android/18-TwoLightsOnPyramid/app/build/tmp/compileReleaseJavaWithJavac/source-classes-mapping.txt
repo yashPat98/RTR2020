@@ -1,0 +1,8 @@
+com/RTR/TwoLights/BuildConfig.java
+ com.RTR.TwoLights.BuildConfig
+com/RTR/TwoLights/GLESMacros.java
+ com.RTR.TwoLights.GLESMacros
+com/RTR/TwoLights/MainActivity.java
+ com.RTR.TwoLights.MainActivity
+com/RTR/TwoLights/GLESView.java
+ com.RTR.TwoLights.GLESView
