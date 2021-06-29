@@ -1,0 +1,17 @@
+main()
+{
+    ...
+    //window is built-in variable
+    window.addEventListener("keydown", keyDown, false);
+    window.addEventListener("click", mouseDown, false);
+}
+
+function keyDown(event)
+{
+    alert("key is pressed");
+}
+
+function mouseDown()
+{
+    alert("mouse button is clicked");
+}
