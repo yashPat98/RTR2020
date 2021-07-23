@@ -1,6 +1,7 @@
 //headers
 #include <windows.h>               //standard windows header
 #include <stdio.h>                 //C header 
+#include <vector>                  //standard vector header
 #include <gl/glew.h>               //OpenGL extension wrangler (must be included before gl.h)
 #include <gl/gl.h>                 //OpenGL header
 #include "vmath.h"                 //Maths header
@@ -19,9 +20,6 @@
 
 #define VK_F       0x46            //virtual key code of F key
 #define VK_f       0x60            //virtual key code of f key
-
-#define CHECK_IMAGE_WIDTH   64     //texture width
-#define CHECK_IMAGE_HEIGHT  64     //texture height
 
 //namespaces
 using namespace vmath;
@@ -55,16 +53,35 @@ GLuint vertexShaderObject;         //handle to vertex shader object
 GLuint fragmentShaderObject;       //handle to fragment shader object
 GLuint shaderProgramObject;        //handle to shader program object
 
-GLuint vao;                        //handle to vertex array object for square
-GLuint vbo_position;               //handle to vertex buffer object for vertices of square
-GLuint vbo_texcoord;               //handle to vertex buffer object for texcoords of square
-GLuint mvpMatrixUniform;           //handle to mvp matrix uniform in vertex shader      
-GLuint textureSamplerUniform;      //handle to texture sampler uniform in fragment shader
+GLuint vao;                        
+GLuint vbo_position;     
+
+GLuint vao_x;
+GLuint vbo_x_position;
+
+GLuint vao_y;
+GLuint vbo_y_position;
+
+GLuint vao_circle;
+GLuint vbo_circle_position;
+
+GLuint vao_square;
+GLuint vbo_square_position;
+
+GLuint vao_triangle;
+GLuint vbo_triangle_position;
+
+GLuint vao_incircle;
+GLuint vbo_incircle_position;
+
+GLuint mvpMatrixUniform;   
+GLuint colorUniform;              
 
 mat4 perspectiveProjectionMatrix;  
 
-GLubyte checkImage[CHECK_IMAGE_HEIGHT][CHECK_IMAGE_WIDTH][4];
-GLuint checker_texture;
+std::vector<GLfloat> vertices_line;
+std::vector<GLfloat> vertices_circle;
+std::vector<GLfloat> vertices_incircle;
 
 //windows entry point function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -77,7 +94,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
     WNDCLASSEX wndclass;                                   //structure holding window class attributes
     MSG msg;                                               //structure holding message attributes
     HWND hwnd;                                             //handle to a window
-    TCHAR szAppName[] = TEXT("OpenGL : Checkerboard");     //name of window class
+    TCHAR szAppName[] = TEXT("Graph");                     //name of window class
 
     int cxScreen, cyScreen;                                //screen width and height for centering window
     int init_x, init_y;                                    //top-left coordinates of centered window
@@ -308,7 +325,7 @@ void Initialize(void)
     //function declarations
     void Resize(int, int);          //warm-up call
     void UnInitialize(void);        //release resources
-    void loadGLTexture(void);       //load procedural texture
+    float distance(float x1, float y1, float x2, float y2);
 
     //variable declarations
     PIXELFORMATDESCRIPTOR pfd;      //structure describing the pixel format
@@ -403,13 +420,10 @@ void Initialize(void)
         "#version 450 core"                                         \
         "\n"                                                        \
         "in vec4 vPosition;"                                        \
-        "in vec2 vTexCoord;"                                        \
         "uniform mat4 u_mvpMatrix;"                                 \
-        "out vec2 out_texcoord;"
         "void main(void)"                                           \
         "{"                                                         \
         "   gl_Position = u_mvpMatrix * vPosition;"                 \
-        "   out_texcoord = vTexCoord;"                              \
         "}";
 
     //provide source code to shader object
@@ -450,14 +464,13 @@ void Initialize(void)
 
     //shader source code
     const GLchar* fragmentShaderSourceCode = 
-        "#version 450 core"                                          \
-        "\n"                                                         \
-        "in vec2 out_texcoord;"                                      \
-        "out vec4 FragColor;"                                        \
-        "uniform sampler2D u_textureSampler;"                        \
-        "void main(void)"                                            \
-        "{"                                                          \
-        "   FragColor = texture(u_textureSampler, out_texcoord);"    \
+        "#version 450 core"                             \
+        "\n"                                            \
+        "out vec4 FragColor;"                           \
+        "uniform vec3 color;"                           \
+        "void main(void)"                               \
+        "{"                                             \
+        "   FragColor = vec4(color, 1.0f);"             \
         "}";
 
     //provide source code to shader object 
@@ -501,9 +514,6 @@ void Initialize(void)
     //binding of shader program object with vertex shader position attribute
     glBindAttribLocation(shaderProgramObject, AMC_ATTRIBUTE_POSITION, "vPositon");
 
-    //binding of shader program object with vertex shader texcoord attribute
-    glBindAttribLocation(shaderProgramObject, AMC_ATTRIBUTE_TEXCOORD, "vTexCoord");
-
     //link shader program 
     glLinkProgram(shaderProgramObject);
 
@@ -530,39 +540,158 @@ void Initialize(void)
 
     //get MVP uniform location
     mvpMatrixUniform = glGetUniformLocation(shaderProgramObject, "u_mvpMatrix"); 
+    colorUniform = glGetUniformLocation(shaderProgramObject, "color"); 
 
-    //get texture sampler uniform location
-    textureSamplerUniform = glGetUniformLocation(shaderProgramObject, "u_textureSampler");
+    //vertex data
+    GLfloat fInterval = 0.05f;
+    for(float fStep = -20.0f; fStep <= 20.0f; fStep++)
+    {   
+        vertices_line.push_back(-1.0f);
+        vertices_line.push_back(fInterval * fStep);
+        vertices_line.push_back(0.0f);
 
-    //texcoord data of square
-    const GLfloat squareTexcoord[] =
+        vertices_line.push_back(1.0f);
+        vertices_line.push_back(fInterval * fStep);
+        vertices_line.push_back(0.0f);
+
+        vertices_line.push_back(fInterval * fStep);
+        vertices_line.push_back(-1.0f);
+        vertices_line.push_back(0.0f);
+
+        vertices_line.push_back(fInterval * fStep);
+        vertices_line.push_back(1.0f);
+        vertices_line.push_back(0.0f);
+    }
+
+    const GLfloat x_axis[] = 
     {
-        1.0f, 1.0f,
-        0.0f, 1.0f, 
-        0.0f, 0.0f,
-        1.0f, 0.0f
+        -1.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f
     };
+
+    const GLfloat y_axis[] = 
+    {
+        0.0f, -1.0f, 0.0f,
+        0.0f, 1.0f, 0.0f
+    };
+
+    const GLfloat square[] = 
+    {
+        cosf(0.785375f), sinf(0.785375f), 0.0f,
+        cosf(M_PI - 0.785375f), sinf(M_PI - 0.785375f), 0.0f,
+        -cosf(0.785375f), -sinf(0.785375f), 0.0f,
+        sinf(M_PI - 0.785375f), cosf(M_PI - 0.785375f), 0.0f
+    };
+
+    const GLfloat triangle[] = 
+    {
+        0.0f, (cosf(0.785375f) - cosf(M_PI - 0.785375f)) / 2.0f, 0.0f,
+        -cosf(0.785375f), -sinf(0.785375f), 0.0f,
+        sinf(M_PI - 0.785375f), cosf(M_PI - 0.785375f), 0.0f
+    };
+
+    for(float angle = 0.0f; angle <= (2.0f * M_PI); angle += 0.1f)
+    {
+        GLfloat x = sin(angle);
+        GLfloat y = cos(angle);
+
+        vertices_circle.push_back(x);
+        vertices_circle.push_back(y);
+        vertices_circle.push_back(0.0f);        
+    }
+
+    //incircle
+    float lab = distance(0.0f, (cos(0.785375f) - cos(M_PI - 0.785375f)) / 2.0f, -cos(0.785375f), -sin(0.785375f));
+    float lbc = distance(-cos(0.785375f), -sin(0.785375f), sin(M_PI - 0.785375f), cos(M_PI - 0.785375f));
+    float lac = distance(0.0f, (cos(0.785375f) - cos(M_PI - 0.785375f)) / 2.0f, sin(M_PI - 0.785375f), cos(M_PI - 0.785375f));
+    float sum = lab + lbc + lac;
+
+    float xin = ((lbc * 0.0f) + (lac * (-cos(0.785375f))) + (lab * sin(M_PI - 0.785375f))) / sum;
+    float yin = ((lbc * ((cos(0.785375f) - cos(M_PI - 0.785375f)) / 2.0f)) + (lac * (-sin(0.785375f))) + (lab * cos(M_PI - 0.785375f))) / sum;
+
+    //radius of incircle = area / semi-perimeter;
+    float semi = (lab + lbc + lac) / 2;
+    float radius = sqrt(semi * (semi - lab) * (semi - lbc) * (semi - lac)) / semi;
+
+    for(float angle = 0.0f; angle <= (2 * M_PI); angle += 0.1f)
+    {
+        float x = radius * sin(angle);
+        float y = radius * cos(angle);
+
+        vertices_incircle.push_back(x + xin);
+        vertices_incircle.push_back(y + yin);
+        vertices_incircle.push_back(0.0f);
+    }
 
     //setup vao and vbo
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
+        glGenBuffers(1, &vbo_position);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
+            glBufferData(GL_ARRAY_BUFFER, vertices_line.size() * sizeof(GLfloat), vertices_line.data(), GL_STATIC_DRAW);
+            glVertexAttribPointer(AMC_ATTRIBUTE_POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+            glEnableVertexAttribArray(AMC_ATTRIBUTE_POSITION);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 
-    glGenBuffers(1, &vbo_position);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
-    glBufferData(GL_ARRAY_BUFFER, 3 * 4 * sizeof(GLfloat), NULL, GL_DYNAMIC_DRAW);
+    glGenVertexArrays(1, &vao_x);
+    glBindVertexArray(vao_x);
+        glGenBuffers(1, &vbo_x_position);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_x_position);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(x_axis), x_axis, GL_STATIC_DRAW);
+            glVertexAttribPointer(AMC_ATTRIBUTE_POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+            glEnableVertexAttribArray(AMC_ATTRIBUTE_POSITION);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 
-    glVertexAttribPointer(AMC_ATTRIBUTE_POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-    glEnableVertexAttribArray(AMC_ATTRIBUTE_POSITION);
+    glGenVertexArrays(1, &vao_y);
+    glBindVertexArray(vao_y);
+        glGenBuffers(1, &vbo_y_position);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_y_position);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(y_axis), y_axis, GL_STATIC_DRAW);
+            glVertexAttribPointer(AMC_ATTRIBUTE_POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+            glEnableVertexAttribArray(AMC_ATTRIBUTE_POSITION);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 
-    glGenBuffers(1, &vbo_texcoord);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_texcoord);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(squareTexcoord), squareTexcoord, GL_STATIC_DRAW);
+    glGenVertexArrays(1, &vao_circle);
+    glBindVertexArray(vao_circle);
+        glGenBuffers(1, &vbo_circle_position);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_circle_position);
+            glBufferData(GL_ARRAY_BUFFER, vertices_circle.size() * sizeof(GLfloat), vertices_circle.data(), GL_STATIC_DRAW);
+            glVertexAttribPointer(AMC_ATTRIBUTE_POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+            glEnableVertexAttribArray(AMC_ATTRIBUTE_POSITION);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 
-    glVertexAttribPointer(AMC_ATTRIBUTE_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0, NULL);
-    glEnableVertexAttribArray(AMC_ATTRIBUTE_TEXCOORD);
+    glGenVertexArrays(1, &vao_square);
+    glBindVertexArray(vao_square);
+        glGenBuffers(1, &vbo_square_position);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_square_position);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(square), square, GL_STATIC_DRAW);
+            glVertexAttribPointer(AMC_ATTRIBUTE_POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+            glEnableVertexAttribArray(AMC_ATTRIBUTE_POSITION);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 
-    //unbind buffers
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glGenVertexArrays(1, &vao_triangle);
+    glBindVertexArray(vao_triangle);
+        glGenBuffers(1, &vbo_triangle_position);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_triangle_position);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(triangle), triangle, GL_STATIC_DRAW);
+            glVertexAttribPointer(AMC_ATTRIBUTE_POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+            glEnableVertexAttribArray(AMC_ATTRIBUTE_POSITION);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    glGenVertexArrays(1, &vao_incircle);
+    glBindVertexArray(vao_incircle);
+        glGenBuffers(1, &vbo_incircle_position);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_incircle_position);
+            glBufferData(GL_ARRAY_BUFFER, vertices_incircle.size() * sizeof(GLfloat), vertices_incircle.data(), GL_STATIC_DRAW);
+            glVertexAttribPointer(AMC_ATTRIBUTE_POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+            glEnableVertexAttribArray(AMC_ATTRIBUTE_POSITION);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
     //smooth shading  
@@ -575,9 +704,7 @@ void Initialize(void)
 
     //quality of color and texture coordinate interpolation
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);    
-
-    //enable 2D texture memory
-    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_CULL_FACE);
 
     //set clearing color
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  
@@ -585,57 +712,15 @@ void Initialize(void)
     //set perspective projection matrix to identity
     perspectiveProjectionMatrix = mat4::identity();
 
-    loadGLTexture();
-
     //warm-up  call
     Resize(WIN_WIDTH, WIN_HEIGHT);
 }
 
-void loadGLTexture(void)
+float distance(float x1, float y1, float x2, float y2)
 {
-    //function declaration
-    void MakeCheckImage(void);
-
     //code
-    MakeCheckImage();
-
-    //generate texture object
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glGenTextures(1, &checker_texture);
-    glBindTexture(GL_TEXTURE_2D, checker_texture);
-
-    //set up texture parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    //push the data to texture memory
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CHECK_IMAGE_WIDTH, CHECK_IMAGE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, checkImage);
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-    //set texture environment parameter
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-}
-
-void MakeCheckImage(void)
-{
-    //variable declarations
-    int i, j, c;
-
-    //code
-    for(i = 0; i < CHECK_IMAGE_HEIGHT; i++)
-    {
-        for(j = 0; j < CHECK_IMAGE_WIDTH; j++)
-        {
-            c = (((i & 0x8) == 0) ^ ((j & 0x8) == 0)) * 255;
-        
-            checkImage[i][j][0] = (GLubyte)c;
-            checkImage[i][j][1] = (GLubyte)c;
-            checkImage[i][j][2] = (GLubyte)c;
-            checkImage[i][j][3] = (GLubyte)255;
-        }
-    }
+    float result = ((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1));
+    return ((float)sqrt(result));
 }
 
 void Resize(int width, int height)
@@ -659,8 +744,6 @@ void Display(void)
     mat4 modelViewProjectionMatrix;
     mat4 translateMatrix;
 
-    GLfloat squareVertices[12];
-
     //code
     //clear the color buffer and depth buffer with currrent 
     //clearing values (set up in initilaize)
@@ -676,73 +759,43 @@ void Display(void)
     translateMatrix = mat4::identity();
 
     //translate modelview matrix
-    translateMatrix = vmath::translate(0.0f, 0.0f, -3.6f);
+    translateMatrix = vmath::translate(0.0f, 0.0f, -2.5f);
     modelViewMatrix = translateMatrix;
-
-    //multiply the modelview and perspective projection matrix to get modelviewprojection matrix 
     modelViewProjectionMatrix = perspectiveProjectionMatrix * modelViewMatrix;
 
-    //pass above modelviewprojection matrix to the vertex shader in
-    //"u_mvpMatrix" shader variable
     glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, modelViewProjectionMatrix);
-
-    //bind checker texture
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, checker_texture);
-    glUniform1i(textureSamplerUniform, 0);
+    glUniform3f(colorUniform, 0.0f, 0.0f, 1.0f);
 
     //bind vao
     glBindVertexArray(vao);
+    glDrawArrays(GL_LINES, 0, vertices_line.size() / 3);
+    glBindVertexArray(0);
 
-    //--- Simple Square ---
-    squareVertices[0] = -2.0f;
-    squareVertices[1] = -1.0f;
-    squareVertices[2] = 0.0f;
+    glUniform3f(colorUniform, 1.0f, 0.0f, 0.0f);
+    glBindVertexArray(vao_x);
+    glDrawArrays(GL_LINES, 0, 2);
+    glBindVertexArray(0);
 
-    squareVertices[3] = -2.0f;
-    squareVertices[4] = 1.0f;
-    squareVertices[5] = 0.0f;
+    glUniform3f(colorUniform, 0.0f, 1.0f, 0.0f);
+    glBindVertexArray(vao_y);
+    glDrawArrays(GL_LINES, 0, 2);
+    glBindVertexArray(0);
 
-    squareVertices[6] = 0.0f;
-    squareVertices[7] = 1.0f;
-    squareVertices[8] = 0.0f;
+    glUniform3f(colorUniform, 1.0f, 1.0f, 0.0f);
+    glBindVertexArray(vao_circle);
+    glDrawArrays(GL_LINE_LOOP, 0, vertices_circle.size() / 3);
+    glBindVertexArray(0);
 
-    squareVertices[9] = 0.0f;
-    squareVertices[10] = -1.0f;
-    squareVertices[11] = 0.0f;
+    glBindVertexArray(vao_square);
+    glDrawArrays(GL_LINE_LOOP, 0, 4);
+    glBindVertexArray(0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(squareVertices), squareVertices, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(vao_triangle);
+    glDrawArrays(GL_LINE_LOOP, 0, 3);
+    glBindVertexArray(0);
 
-    //draw
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-    //--- Tilted Square ---
-    squareVertices[0] = 1.0f;
-    squareVertices[1] = -1.0f;
-    squareVertices[2] = 0.0f;
-
-    squareVertices[3] = 1.0f;
-    squareVertices[4] = 1.0f;
-    squareVertices[5] = 0.0f;
-
-    squareVertices[6] = 2.41421f;
-    squareVertices[7] = 1.0f;
-    squareVertices[8] = -1.41421f;
-
-    squareVertices[9] = 2.41421f;
-    squareVertices[10] = -1.0f;
-    squareVertices[11] = -1.41421f;
-
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(squareVertices), squareVertices, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    //draw
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-    //unbind vao
+    glBindVertexArray(vao_incircle);
+    glDrawArrays(GL_LINE_LOOP, 0, vertices_incircle.size() / 3);
     glBindVertexArray(0);
 
     //stop using OpenGL program object
@@ -773,8 +826,8 @@ void UnInitialize(void)
         gbFullscreen = false;
     }
 
-    //delete textures
-    glDeleteTextures(1, &checker_texture);
+    vertices_line.clear();
+    vertices_circle.clear();
 
     //release vao 
     if(vao)
@@ -790,10 +843,69 @@ void UnInitialize(void)
         vbo_position = 0;
     }
 
-    if(vbo_texcoord)
+    if(vao_x)
     {
-        glDeleteVertexArrays(1, &vbo_texcoord);
-        vbo_texcoord = 0;
+        glDeleteVertexArrays(1, &vao_x);
+        vao_x = 0;
+    }
+
+    //release vbo
+    if(vbo_x_position)
+    {
+        glDeleteBuffers(1, &vbo_x_position);
+        vbo_x_position = 0;
+    }
+
+        if(vao_y)
+    {
+        glDeleteVertexArrays(1, &vao_y);
+        vao_y = 0;
+    }
+
+    //release vbo
+    if(vbo_y_position)
+    {
+        glDeleteBuffers(1, &vbo_y_position);
+        vbo_y_position = 0;
+    }
+
+    if(vao_square)
+    {
+        glDeleteVertexArrays(1, &vao_square);
+        vao_square = 0;
+    }
+
+    //release vbo
+    if(vbo_square_position)
+    {
+        glDeleteBuffers(1, &vbo_square_position);
+        vbo_square_position = 0;
+    }
+
+    if(vao_triangle)
+    {
+        glDeleteVertexArrays(1, &vao_triangle);
+        vao_triangle = 0;
+    }
+
+    //release vbo
+    if(vbo_triangle_position)
+    {
+        glDeleteBuffers(1, &vbo_triangle_position);
+        vbo_triangle_position = 0;
+    }
+
+    if(vao_incircle)
+    {
+        glDeleteVertexArrays(1, &vao_incircle);
+        vao_incircle = 0;
+    }
+
+    //release vbo
+    if(vbo_incircle_position)
+    {
+        glDeleteBuffers(1, &vbo_incircle_position);
+        vbo_incircle_position = 0;
     }
 
     //safe shader cleanup

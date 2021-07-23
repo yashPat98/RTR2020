@@ -626,7 +626,6 @@ void Initialize(void)
         1.0f, -1.0f, 1.0f,
         -1.0f, -1.0f, 1.0f
     };
- 
 
     const GLfloat cubeTexcoords[] = 
     {
@@ -762,7 +761,7 @@ bool loadGLTexture(GLuint *texture, TCHAR ResourceID[])
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
         //push the data to texture memory
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, bmp.bmWidth, bmp.bmHeight, 0, GL_BGR, GL_UNSIGNED_BYTE, bmp.bmBits);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bmp.bmWidth, bmp.bmHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, bmp.bmBits);
         glGenerateMipmap(GL_TEXTURE_2D);
     
         //free resource

@@ -20,9 +20,6 @@
 #define VK_F       0x46            //virtual key code of F key
 #define VK_f       0x60            //virtual key code of f key
 
-#define CHECK_IMAGE_WIDTH   64     //texture width
-#define CHECK_IMAGE_HEIGHT  64     //texture height
-
 //namespaces
 using namespace vmath;
 
@@ -51,20 +48,21 @@ bool gbFullscreen = false;         //flag indicating whether window is fullscree
 
 FILE*  gpFile = NULL;              //log file
 
-GLuint vertexShaderObject;         //handle to vertex shader object
-GLuint fragmentShaderObject;       //handle to fragment shader object
-GLuint shaderProgramObject;        //handle to shader program object
+GLuint vertexShaderObject;         
+GLuint tesellationControlShaderObject; 
+GLuint tesellationEvaluationShaderObject;      
+GLuint fragmentShaderObject;
+GLuint shaderProgramObject;        
 
-GLuint vao;                        //handle to vertex array object for square
-GLuint vbo_position;               //handle to vertex buffer object for vertices of square
-GLuint vbo_texcoord;               //handle to vertex buffer object for texcoords of square
-GLuint mvpMatrixUniform;           //handle to mvp matrix uniform in vertex shader      
-GLuint textureSamplerUniform;      //handle to texture sampler uniform in fragment shader
+GLuint vao;                        
+GLuint vbo_position;               
+GLuint mvpMatrixUniform;                 
+GLuint numberOfSegmentsUniform;
+GLuint numberOfStripsUniform;
+GLuint lineColorUniform;
 
 mat4 perspectiveProjectionMatrix;  
-
-GLubyte checkImage[CHECK_IMAGE_HEIGHT][CHECK_IMAGE_WIDTH][4];
-GLuint checker_texture;
+unsigned int uiNumberOfSegments;
 
 //windows entry point function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -77,7 +75,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
     WNDCLASSEX wndclass;                                   //structure holding window class attributes
     MSG msg;                                               //structure holding message attributes
     HWND hwnd;                                             //handle to a window
-    TCHAR szAppName[] = TEXT("OpenGL : Checkerboard");     //name of window class
+    TCHAR szAppName[] = TEXT("Tesellation Shader");        //name of window class
 
     int cxScreen, cyScreen;                                //screen width and height for centering window
     int init_x, init_y;                                    //top-left coordinates of centered window
@@ -213,7 +211,19 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
                 case VK_f:
                     ToggleFullscreen();
                     break;
+
+                case VK_UP:
+                    uiNumberOfSegments++;
+                    if(uiNumberOfSegments > 30)
+                        uiNumberOfSegments = 30;
+                    break;
                 
+                case VK_DOWN:
+                    uiNumberOfSegments--;
+                    if(uiNumberOfSegments <= 0)
+                        uiNumberOfSegments = 1;
+                    break;
+
                 default:
                     break;
             }
@@ -308,7 +318,6 @@ void Initialize(void)
     //function declarations
     void Resize(int, int);          //warm-up call
     void UnInitialize(void);        //release resources
-    void loadGLTexture(void);       //load procedural texture
 
     //variable declarations
     PIXELFORMATDESCRIPTOR pfd;      //structure describing the pixel format
@@ -402,14 +411,10 @@ void Initialize(void)
     const GLchar* vertexShaderSourceCode = 
         "#version 450 core"                                         \
         "\n"                                                        \
-        "in vec4 vPosition;"                                        \
-        "in vec2 vTexCoord;"                                        \
-        "uniform mat4 u_mvpMatrix;"                                 \
-        "out vec2 out_texcoord;"
+        "in vec2 vPosition;"                                        \
         "void main(void)"                                           \
         "{"                                                         \
-        "   gl_Position = u_mvpMatrix * vPosition;"                 \
-        "   out_texcoord = vTexCoord;"                              \
+        "   gl_Position = vec4(vPosition, 0.0f, 1.0f);"             \
         "}";
 
     //provide source code to shader object
@@ -443,6 +448,103 @@ void Initialize(void)
 
     fprintf(gpFile, "\n----- Vertex Shader Compiled Successfully -----\n");
 
+    //Tesselation Control Shader
+    tesellationControlShaderObject = glCreateShader(GL_TESS_CONTROL_SHADER);
+    
+    //shader source code
+    const GLchar* tesellationControlShaderSourceCode = 
+        "#version 450 core"                             \
+        "\n"                                            \
+        
+        "layout(vertices = 4)out;"                      \
+        "uniform int u_numberOfSegments;"               \
+        "uniform int u_numberOfStrips;"                 \
+
+        "void main(void)"                               \
+        "{"                                             \
+        "   gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;"      \
+        "   gl_TessLevelOuter[0] = float(u_numberOfStrips);"                                \
+        "   gl_TessLevelOuter[1] = float(u_numberOfSegments);"                              \
+        "}";
+
+    //provide source code to shader object 
+    glShaderSource(tesellationControlShaderObject, 1, (const GLchar**)&tesellationControlShaderSourceCode, NULL);
+
+    //compile shader
+    glCompileShader(tesellationControlShaderObject);
+
+    //shader compilation error checking
+    glGetShaderiv(tesellationControlShaderObject, GL_COMPILE_STATUS, &shaderCompiledStatus);
+    if(shaderCompiledStatus == GL_FALSE)
+    {
+        glGetShaderiv(tesellationControlShaderObject, GL_INFO_LOG_LENGTH, &infoLogLength);
+        if(infoLogLength > 0)
+        {
+            szInfoLog = (GLchar*)malloc(sizeof(GLchar) * infoLogLength);
+            if(szInfoLog != NULL)
+            {
+                GLsizei written;
+                glGetShaderInfoLog(tesellationControlShaderObject, infoLogLength, &written, szInfoLog);
+                fprintf(gpFile, "Tesselation Control Shader Compilation Log : %s\n", szInfoLog);
+                free(szInfoLog);
+                DestroyWindow(ghwnd);
+            }
+        }
+    }
+
+    fprintf(gpFile, "----- Tesselation Control Shader Compiled Successfully -----\n");
+
+    //Tesselation Evaluation Shader
+    tesellationEvaluationShaderObject = glCreateShader(GL_TESS_EVALUATION_SHADER);
+    
+    //shader source code
+    const GLchar* tesellationEvaluationShaderSourceCode = 
+        "#version 450 core"                             \
+        "\n"                                            \
+        
+        "layout(isolines)in;"                           \
+        "uniform mat4 u_mvpMatrix;"                     \
+
+        "void main(void)"                               \
+        "{"                                             \
+        "   float tessCoord = gl_TessCoord.x;"          \
+        
+        "   vec3 p0 = gl_in[0].gl_Position.xyz;"        \
+        "   vec3 p1 = gl_in[1].gl_Position.xyz;"        \
+        "   vec3 p2 = gl_in[2].gl_Position.xyz;"        \
+        "   vec3 p3 = gl_in[3].gl_Position.xyz;"        \
+
+        "   vec3 p = (p0 * (1.0f - tessCoord) * (1.0f - tessCoord) * (1.0f - tessCoord)) + (p1 * 3.0f * tessCoord * (1.0f - tessCoord) * (1.0f - tessCoord)) + (p2 * 3.0f * tessCoord * tessCoord * (1.0f - tessCoord)) + (p3 * tessCoord * tessCoord * tessCoord);"    \
+        "   gl_Position = u_mvpMatrix * vec4(p, 1.0);"   \
+        "}";
+
+    //provide source code to shader object 
+    glShaderSource(tesellationEvaluationShaderObject, 1, (const GLchar**)&tesellationEvaluationShaderSourceCode, NULL);
+
+    //compile shader
+    glCompileShader(tesellationEvaluationShaderObject);
+
+    //shader compilation error checking
+    glGetShaderiv(tesellationEvaluationShaderObject, GL_COMPILE_STATUS, &shaderCompiledStatus);
+    if(shaderCompiledStatus == GL_FALSE)
+    {
+        glGetShaderiv(tesellationEvaluationShaderObject, GL_INFO_LOG_LENGTH, &infoLogLength);
+        if(infoLogLength > 0)
+        {
+            szInfoLog = (GLchar*)malloc(sizeof(GLchar) * infoLogLength);
+            if(szInfoLog != NULL)
+            {
+                GLsizei written;
+                glGetShaderInfoLog(tesellationEvaluationShaderObject, infoLogLength, &written, szInfoLog);
+                fprintf(gpFile, "Tesselation Evaluation Shader Compilation Log : %s\n", szInfoLog);
+                free(szInfoLog);
+                DestroyWindow(ghwnd);
+            }
+        }
+    }
+
+    fprintf(gpFile, "----- Tesselation Evaluation Shader Compiled Successfully -----\n");
+
     //--- Fragment Shader ---
 
     //create shader
@@ -450,14 +552,15 @@ void Initialize(void)
 
     //shader source code
     const GLchar* fragmentShaderSourceCode = 
-        "#version 450 core"                                          \
-        "\n"                                                         \
-        "in vec2 out_texcoord;"                                      \
-        "out vec4 FragColor;"                                        \
-        "uniform sampler2D u_textureSampler;"                        \
-        "void main(void)"                                            \
-        "{"                                                          \
-        "   FragColor = texture(u_textureSampler, out_texcoord);"    \
+        "#version 450 core"                             \
+        "\n"                                            \
+        
+        "out vec4 FragColor;"                           \
+        "uniform vec4 u_lineColor;"                     \
+
+        "void main(void)"                               \
+        "{"                                             \
+        "   FragColor = u_lineColor;"                   \
         "}";
 
     //provide source code to shader object 
@@ -495,14 +598,17 @@ void Initialize(void)
     //attach vertex shader to shader program
     glAttachShader(shaderProgramObject, vertexShaderObject);
 
+    //attach tesellation control shader to shader program
+    glAttachShader(shaderProgramObject, tesellationControlShaderObject);
+
+    //attach tesellation evaluation shader to shader program
+    glAttachShader(shaderProgramObject, tesellationEvaluationShaderObject);
+
     //attach fragment shader to shader program
     glAttachShader(shaderProgramObject, fragmentShaderObject);
 
     //binding of shader program object with vertex shader position attribute
     glBindAttribLocation(shaderProgramObject, AMC_ATTRIBUTE_POSITION, "vPositon");
-
-    //binding of shader program object with vertex shader texcoord attribute
-    glBindAttribLocation(shaderProgramObject, AMC_ATTRIBUTE_TEXCOORD, "vTexCoord");
 
     //link shader program 
     glLinkProgram(shaderProgramObject);
@@ -529,18 +635,18 @@ void Initialize(void)
     fprintf(gpFile, "----- Shader Program Linked Successfully -----\n");
 
     //get MVP uniform location
-    mvpMatrixUniform = glGetUniformLocation(shaderProgramObject, "u_mvpMatrix"); 
+    mvpMatrixUniform = glGetUniformLocation(shaderProgramObject, "u_mvpMatrix");
+    numberOfSegmentsUniform = glGetUniformLocation(shaderProgramObject, "u_numberOfSegments");
+    numberOfStripsUniform = glGetUniformLocation(shaderProgramObject, "u_numberOfStrips"); 
+    lineColorUniform = glGetUniformLocation(shaderProgramObject, "u_lineColor");
 
-    //get texture sampler uniform location
-    textureSamplerUniform = glGetUniformLocation(shaderProgramObject, "u_textureSampler");
-
-    //texcoord data of square
-    const GLfloat squareTexcoord[] =
+    //vertex data
+    const GLfloat vertices[] = 
     {
-        1.0f, 1.0f,
-        0.0f, 1.0f, 
-        0.0f, 0.0f,
-        1.0f, 0.0f
+        -1.0f, -1.0f,
+        -0.5f, 1.0f,
+        0.5f, -1.0f,
+        1.0f, 1.0f
     };
 
     //setup vao and vbo
@@ -549,17 +655,10 @@ void Initialize(void)
 
     glGenBuffers(1, &vbo_position);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
-    glBufferData(GL_ARRAY_BUFFER, 3 * 4 * sizeof(GLfloat), NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(AMC_ATTRIBUTE_POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    glVertexAttribPointer(AMC_ATTRIBUTE_POSITION, 2, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(AMC_ATTRIBUTE_POSITION);
-
-    glGenBuffers(1, &vbo_texcoord);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_texcoord);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(squareTexcoord), squareTexcoord, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(AMC_ATTRIBUTE_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0, NULL);
-    glEnableVertexAttribArray(AMC_ATTRIBUTE_TEXCOORD);
 
     //unbind buffers
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -575,67 +674,17 @@ void Initialize(void)
 
     //quality of color and texture coordinate interpolation
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);    
-
-    //enable 2D texture memory
-    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_CULL_FACE);
 
     //set clearing color
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  
 
     //set perspective projection matrix to identity
     perspectiveProjectionMatrix = mat4::identity();
-
-    loadGLTexture();
+    uiNumberOfSegments = 1;
 
     //warm-up  call
     Resize(WIN_WIDTH, WIN_HEIGHT);
-}
-
-void loadGLTexture(void)
-{
-    //function declaration
-    void MakeCheckImage(void);
-
-    //code
-    MakeCheckImage();
-
-    //generate texture object
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glGenTextures(1, &checker_texture);
-    glBindTexture(GL_TEXTURE_2D, checker_texture);
-
-    //set up texture parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    //push the data to texture memory
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CHECK_IMAGE_WIDTH, CHECK_IMAGE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, checkImage);
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-    //set texture environment parameter
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-}
-
-void MakeCheckImage(void)
-{
-    //variable declarations
-    int i, j, c;
-
-    //code
-    for(i = 0; i < CHECK_IMAGE_HEIGHT; i++)
-    {
-        for(j = 0; j < CHECK_IMAGE_WIDTH; j++)
-        {
-            c = (((i & 0x8) == 0) ^ ((j & 0x8) == 0)) * 255;
-        
-            checkImage[i][j][0] = (GLubyte)c;
-            checkImage[i][j][1] = (GLubyte)c;
-            checkImage[i][j][2] = (GLubyte)c;
-            checkImage[i][j][3] = (GLubyte)255;
-        }
-    }
 }
 
 void Resize(int width, int height)
@@ -659,8 +708,6 @@ void Display(void)
     mat4 modelViewProjectionMatrix;
     mat4 translateMatrix;
 
-    GLfloat squareVertices[12];
-
     //code
     //clear the color buffer and depth buffer with currrent 
     //clearing values (set up in initilaize)
@@ -676,7 +723,7 @@ void Display(void)
     translateMatrix = mat4::identity();
 
     //translate modelview matrix
-    translateMatrix = vmath::translate(0.0f, 0.0f, -3.6f);
+    translateMatrix = vmath::translate(0.0f, 0.0f, -4.0f);
     modelViewMatrix = translateMatrix;
 
     //multiply the modelview and perspective projection matrix to get modelviewprojection matrix 
@@ -686,61 +733,16 @@ void Display(void)
     //"u_mvpMatrix" shader variable
     glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, modelViewProjectionMatrix);
 
-    //bind checker texture
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, checker_texture);
-    glUniform1i(textureSamplerUniform, 0);
+    glUniform1i(numberOfSegmentsUniform, uiNumberOfSegments);
+    glUniform1i(numberOfStripsUniform, 1);
+    glUniform4fv(lineColorUniform, 1, vmath::vec4(1.0f, 1.0f, 0.0f, 1.0f));
 
     //bind vao
     glBindVertexArray(vao);
 
-    //--- Simple Square ---
-    squareVertices[0] = -2.0f;
-    squareVertices[1] = -1.0f;
-    squareVertices[2] = 0.0f;
-
-    squareVertices[3] = -2.0f;
-    squareVertices[4] = 1.0f;
-    squareVertices[5] = 0.0f;
-
-    squareVertices[6] = 0.0f;
-    squareVertices[7] = 1.0f;
-    squareVertices[8] = 0.0f;
-
-    squareVertices[9] = 0.0f;
-    squareVertices[10] = -1.0f;
-    squareVertices[11] = 0.0f;
-
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(squareVertices), squareVertices, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
     //draw
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-    //--- Tilted Square ---
-    squareVertices[0] = 1.0f;
-    squareVertices[1] = -1.0f;
-    squareVertices[2] = 0.0f;
-
-    squareVertices[3] = 1.0f;
-    squareVertices[4] = 1.0f;
-    squareVertices[5] = 0.0f;
-
-    squareVertices[6] = 2.41421f;
-    squareVertices[7] = 1.0f;
-    squareVertices[8] = -1.41421f;
-
-    squareVertices[9] = 2.41421f;
-    squareVertices[10] = -1.0f;
-    squareVertices[11] = -1.41421f;
-
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(squareVertices), squareVertices, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    //draw
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    glPatchParameteri(GL_PATCH_VERTICES, 4);
+    glDrawArrays(GL_PATCHES, 0, 4);
 
     //unbind vao
     glBindVertexArray(0);
@@ -773,9 +775,6 @@ void UnInitialize(void)
         gbFullscreen = false;
     }
 
-    //delete textures
-    glDeleteTextures(1, &checker_texture);
-
     //release vao 
     if(vao)
     {
@@ -788,12 +787,6 @@ void UnInitialize(void)
     {
         glDeleteBuffers(1, &vbo_position);
         vbo_position = 0;
-    }
-
-    if(vbo_texcoord)
-    {
-        glDeleteVertexArrays(1, &vbo_texcoord);
-        vbo_texcoord = 0;
     }
 
     //safe shader cleanup

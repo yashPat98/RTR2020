@@ -5,6 +5,7 @@
 #include <gl/gl.h>                 //OpenGL header
 #include "vmath.h"                 //Maths header
 #include "RESOURCES.h"             //Resources header
+#include "Sphere.h"                //Sphere header
 
 //import libraries
 #pragma comment(lib, "user32.lib")
@@ -12,6 +13,7 @@
 #pragma comment(lib, "kernel32.lib")
 #pragma comment(lib, "glew32.lib")
 #pragma comment(lib, "OpenGL32.lib")
+#pragma comment(lib, "Sphere.lib")
 
 //symbolic constants
 #define WIN_WIDTH  800             //initial width of window  
@@ -19,9 +21,6 @@
 
 #define VK_F       0x46            //virtual key code of F key
 #define VK_f       0x60            //virtual key code of f key
-
-#define CHECK_IMAGE_WIDTH   64     //texture width
-#define CHECK_IMAGE_HEIGHT  64     //texture height
 
 //namespaces
 using namespace vmath;
@@ -34,6 +33,19 @@ enum
     AMC_ATTRIBUTE_NORMAL,
     AMC_ATTRIBUTE_TEXCOORD
 };
+
+struct Stack
+{
+    mat4 matrix;
+    struct Stack* next;
+};
+
+//global function declarations
+struct Stack* create_stack();
+void push_matrix(struct Stack* stack, mat4 curr_matrix);
+mat4 pop_matrix(struct Stack* stack);
+mat4 peek_matrix(struct Stack* stack);
+void delete_stack(struct Stack* stack);
 
 //callback procedure declaration
 LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam);
@@ -55,33 +67,48 @@ GLuint vertexShaderObject;         //handle to vertex shader object
 GLuint fragmentShaderObject;       //handle to fragment shader object
 GLuint shaderProgramObject;        //handle to shader program object
 
-GLuint vao;                        //handle to vertex array object for square
-GLuint vbo_position;               //handle to vertex buffer object for vertices of square
-GLuint vbo_texcoord;               //handle to vertex buffer object for texcoords of square
-GLuint mvpMatrixUniform;           //handle to mvp matrix uniform in vertex shader      
-GLuint textureSamplerUniform;      //handle to texture sampler uniform in fragment shader
+GLuint vao_sphere;                 //handle to vertex array object for sphere
+GLuint vbo_sphere_position;        //handle to vertex buffer object for vertices of sphere
+GLuint vbo_sphere_normal;          //handle to vertex buffer object for normals of sphere
+GLuint vbo_sphere_texcoord;        //handle to vertex buffer object for texcoords of sphere
+GLuint vbo_sphere_elements;        //handle to vertex buffer object for indices 
 
+GLuint modelMatrixUniform;
+GLuint viewMatrixUniform;
+GLuint perspectiveProjectionMatrixUniform;
+GLuint materialColorUniform;
+               
 mat4 perspectiveProjectionMatrix;  
+vec4 materialColor;
 
-GLubyte checkImage[CHECK_IMAGE_HEIGHT][CHECK_IMAGE_WIDTH][4];
-GLuint checker_texture;
+GLfloat sphere_vertices[1146];
+GLfloat sphere_normals[1146];
+GLfloat sphere_texcoords[764];
+unsigned short sphere_elements[2280];
+
+int gNumVertices;
+int gNumElements;
+
+int year = 0;
+int day = 0;
+struct Stack* stack;
 
 //windows entry point function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
 {
     //function declarations
-    void Initialize(void);                                 //initialize OpenGL state machine
-    void Display(void);                                    //render scene
+    void Initialize(void);                                      //initialize OpenGL state machine
+    void Display(void);                                         //render scene
 
     //variable declarations
-    WNDCLASSEX wndclass;                                   //structure holding window class attributes
-    MSG msg;                                               //structure holding message attributes
-    HWND hwnd;                                             //handle to a window
-    TCHAR szAppName[] = TEXT("OpenGL : Checkerboard");     //name of window class
+    WNDCLASSEX wndclass;                                        //structure holding window class attributes
+    MSG msg;                                                    //structure holding message attributes
+    HWND hwnd;                                                  //handle to a window
+    TCHAR szAppName[] = TEXT("OpenGL : Solar System");          //name of window class
 
-    int cxScreen, cyScreen;                                //screen width and height for centering window
-    int init_x, init_y;                                    //top-left coordinates of centered window
-    bool bDone = false;                                    //flag indicating whether or not to exit from game loop
+    int cxScreen, cyScreen;                                     //screen width and height for centering window
+    int init_x, init_y;                                         //top-left coordinates of centered window
+    bool bDone = false;                                         //flag indicating whether or not to exit from game loop
 
     //code
     //create/open  'log.txt' file
@@ -218,7 +245,31 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
                     break;
             }
             break;
-        
+
+        case WM_CHAR:
+            switch(wParam)
+            {
+                case 'D':
+                    day = (day + 6) % 360;
+                    break;
+
+                case 'd':
+                    day = (day - 6) % 360;
+                    break;
+
+                case 'Y':
+                    year = (year + 3) % 360;
+                    break;
+                
+                case 'y':
+                    year = (year - 3) % 360;
+                    break;
+                
+                default:
+                    break;
+            }
+            break;
+
         case WM_CLOSE:                           //event : window is closed from sysmenu or close button
             DestroyWindow(hwnd);
             break;
@@ -308,7 +359,6 @@ void Initialize(void)
     //function declarations
     void Resize(int, int);          //warm-up call
     void UnInitialize(void);        //release resources
-    void loadGLTexture(void);       //load procedural texture
 
     //variable declarations
     PIXELFORMATDESCRIPTOR pfd;      //structure describing the pixel format
@@ -400,17 +450,19 @@ void Initialize(void)
 
     //shader source code
     const GLchar* vertexShaderSourceCode = 
-        "#version 450 core"                                         \
-        "\n"                                                        \
-        "in vec4 vPosition;"                                        \
-        "in vec2 vTexCoord;"                                        \
-        "uniform mat4 u_mvpMatrix;"                                 \
-        "out vec2 out_texcoord;"
-        "void main(void)"                                           \
-        "{"                                                         \
-        "   gl_Position = u_mvpMatrix * vPosition;"                 \
-        "   out_texcoord = vTexCoord;"                              \
-        "}";
+        "#version 450 core"                                                                                     \
+        "\n"                                                                                                    \
+        
+        "in vec4 vPosition;"                                                                                    \
+        
+        "uniform mat4 u_modelMatrix;"                                                                           \
+        "uniform mat4 u_viewMatrix;"                                                                            \
+        "uniform mat4 u_perspectiveProjectionMatrix;"                                                           \
+
+        "void main(void)"                                                                                       \
+        "{"                                                                                                     \
+        "   gl_Position = u_perspectiveProjectionMatrix * u_viewMatrix * u_modelMatrix * vPosition;"            \
+        "}";                                                                  
 
     //provide source code to shader object
     glShaderSource(vertexShaderObject, 1, (const GLchar**)&vertexShaderSourceCode, NULL);
@@ -450,14 +502,15 @@ void Initialize(void)
 
     //shader source code
     const GLchar* fragmentShaderSourceCode = 
-        "#version 450 core"                                          \
-        "\n"                                                         \
-        "in vec2 out_texcoord;"                                      \
-        "out vec4 FragColor;"                                        \
-        "uniform sampler2D u_textureSampler;"                        \
-        "void main(void)"                                            \
-        "{"                                                          \
-        "   FragColor = texture(u_textureSampler, out_texcoord);"    \
+        "#version 450 core"                                                                                                             \
+        "\n"                                                                                                                            \
+        
+        "uniform vec3 u_materialColor;"                                                                                                   \
+        "out vec4 fragColor;"                                                                                                           \
+        
+        "void main(void)"                                                                                                               \
+        "{"                                                                                                                             \
+        "   fragColor = vec4(u_materialColor, 1.0f);"                                                                                     \
         "}";
 
     //provide source code to shader object 
@@ -501,9 +554,6 @@ void Initialize(void)
     //binding of shader program object with vertex shader position attribute
     glBindAttribLocation(shaderProgramObject, AMC_ATTRIBUTE_POSITION, "vPositon");
 
-    //binding of shader program object with vertex shader texcoord attribute
-    glBindAttribLocation(shaderProgramObject, AMC_ATTRIBUTE_TEXCOORD, "vTexCoord");
-
     //link shader program 
     glLinkProgram(shaderProgramObject);
 
@@ -528,38 +578,35 @@ void Initialize(void)
 
     fprintf(gpFile, "----- Shader Program Linked Successfully -----\n");
 
-    //get MVP uniform location
-    mvpMatrixUniform = glGetUniformLocation(shaderProgramObject, "u_mvpMatrix"); 
+    //get uniform locations
+    modelMatrixUniform = glGetUniformLocation(shaderProgramObject, "u_modelMatrix");
+    viewMatrixUniform = glGetUniformLocation(shaderProgramObject, "u_viewMatrix");
+    perspectiveProjectionMatrixUniform = glGetUniformLocation(shaderProgramObject, "u_perspectiveProjectionMatrix");
 
-    //get texture sampler uniform location
-    textureSamplerUniform = glGetUniformLocation(shaderProgramObject, "u_textureSampler");
+    materialColorUniform = glGetUniformLocation(shaderProgramObject, "u_materialColor");
 
-    //texcoord data of square
-    const GLfloat squareTexcoord[] =
-    {
-        1.0f, 1.0f,
-        0.0f, 1.0f, 
-        0.0f, 0.0f,
-        1.0f, 0.0f
-    };
+    //get buffer data for sphere
+    getSphereVertexData(sphere_vertices, sphere_normals, sphere_texcoords, sphere_elements);
 
-    //setup vao and vbo
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    gNumVertices = getNumberOfSphereVertices();
+    gNumElements = getNumberOfSphereElements();
 
-    glGenBuffers(1, &vbo_position);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
-    glBufferData(GL_ARRAY_BUFFER, 3 * 4 * sizeof(GLfloat), NULL, GL_DYNAMIC_DRAW);
+    //setup vao and vbo for square
+    glGenVertexArrays(1, &vao_sphere);
+    glBindVertexArray(vao_sphere);
+
+    glGenBuffers(1, &vbo_sphere_position);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_sphere_position);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(sphere_vertices), sphere_vertices, GL_STATIC_DRAW);
 
     glVertexAttribPointer(AMC_ATTRIBUTE_POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(AMC_ATTRIBUTE_POSITION);
 
-    glGenBuffers(1, &vbo_texcoord);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_texcoord);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(squareTexcoord), squareTexcoord, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    glVertexAttribPointer(AMC_ATTRIBUTE_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0, NULL);
-    glEnableVertexAttribArray(AMC_ATTRIBUTE_TEXCOORD);
+    glGenBuffers(1, &vbo_sphere_elements);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo_sphere_elements);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(sphere_elements), sphere_elements, GL_STATIC_DRAW);
 
     //unbind buffers
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -576,66 +623,14 @@ void Initialize(void)
     //quality of color and texture coordinate interpolation
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);    
 
-    //enable 2D texture memory
-    glEnable(GL_TEXTURE_2D);
-
     //set clearing color
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  
 
-    //set perspective projection matrix to identity
     perspectiveProjectionMatrix = mat4::identity();
-
-    loadGLTexture();
+    stack = create_stack();
 
     //warm-up  call
     Resize(WIN_WIDTH, WIN_HEIGHT);
-}
-
-void loadGLTexture(void)
-{
-    //function declaration
-    void MakeCheckImage(void);
-
-    //code
-    MakeCheckImage();
-
-    //generate texture object
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glGenTextures(1, &checker_texture);
-    glBindTexture(GL_TEXTURE_2D, checker_texture);
-
-    //set up texture parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    //push the data to texture memory
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CHECK_IMAGE_WIDTH, CHECK_IMAGE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, checkImage);
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-    //set texture environment parameter
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-}
-
-void MakeCheckImage(void)
-{
-    //variable declarations
-    int i, j, c;
-
-    //code
-    for(i = 0; i < CHECK_IMAGE_HEIGHT; i++)
-    {
-        for(j = 0; j < CHECK_IMAGE_WIDTH; j++)
-        {
-            c = (((i & 0x8) == 0) ^ ((j & 0x8) == 0)) * 255;
-        
-            checkImage[i][j][0] = (GLubyte)c;
-            checkImage[i][j][1] = (GLubyte)c;
-            checkImage[i][j][2] = (GLubyte)c;
-            checkImage[i][j][3] = (GLubyte)255;
-        }
-    }
 }
 
 void Resize(int width, int height)
@@ -655,100 +650,75 @@ void Resize(int width, int height)
 void Display(void)
 {
     //variable declarations
-    mat4 modelViewMatrix;
-    mat4 modelViewProjectionMatrix;
+    mat4 modelMatrix;
+    mat4 viewMatrix;
     mat4 translateMatrix;
-
-    GLfloat squareVertices[12];
+    mat4 rotationMatrix;
+    mat4 scaleMatrix;
 
     //code
-    //clear the color buffer and depth buffer with currrent 
-    //clearing values (set up in initilaize)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    //start using OpenGL program object
     glUseProgram(shaderProgramObject);
 
-    //OpenGL Drawing
-    //set modelview, modelviewprojection & translate matrices to identity
-    modelViewMatrix = mat4::identity();
-    modelViewProjectionMatrix = mat4::identity();
-    translateMatrix = mat4::identity();
+    //set matrices to identity
+    modelMatrix = mat4::identity();
+    viewMatrix = mat4::identity();
 
-    //translate modelview matrix
-    translateMatrix = vmath::translate(0.0f, 0.0f, -3.6f);
-    modelViewMatrix = translateMatrix;
+    //sun
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    viewMatrix = vmath::lookat(vec3(0.0f, 0.0f, 3.5f),
+                               vec3(0.0f, 0.0f, 0.0f),
+                               vec3(0.0f, 1.0f, 0.0f));
 
-    //multiply the modelview and perspective projection matrix to get modelviewprojection matrix 
-    modelViewProjectionMatrix = perspectiveProjectionMatrix * modelViewMatrix;
+    glUniformMatrix4fv(modelMatrixUniform, 1, GL_FALSE, modelMatrix);
+    glUniformMatrix4fv(viewMatrixUniform, 1, GL_FALSE, viewMatrix);
+    glUniformMatrix4fv(perspectiveProjectionMatrixUniform, 1, GL_FALSE, perspectiveProjectionMatrix);
+    glUniform3f(materialColorUniform, 1.0f, 1.0f, 0.0f);
 
-    //pass above modelviewprojection matrix to the vertex shader in
-    //"u_mvpMatrix" shader variable
-    glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, modelViewProjectionMatrix);
+    glBindVertexArray(vao_sphere);
 
-    //bind checker texture
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, checker_texture);
-    glUniform1i(textureSamplerUniform, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo_sphere_elements);
+    glDrawElements(GL_TRIANGLES, gNumElements, GL_UNSIGNED_SHORT, (void*)0);
 
-    //bind vao
-    glBindVertexArray(vao);
+    //earth
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    push_matrix(stack, modelMatrix);
 
-    //--- Simple Square ---
-    squareVertices[0] = -2.0f;
-    squareVertices[1] = -1.0f;
-    squareVertices[2] = 0.0f;
+    rotationMatrix = vmath::rotate((float)year, 0.0f, 1.0f, 0.0f);
+    translateMatrix = vmath::translate(1.5f, 0.0f, 0.0f);
+    scaleMatrix = vmath::scale(0.5f, 0.5f, 0.5f);
+    modelMatrix = modelMatrix * rotationMatrix * translateMatrix * scaleMatrix;
 
-    squareVertices[3] = -2.0f;
-    squareVertices[4] = 1.0f;
-    squareVertices[5] = 0.0f;
+    glUniformMatrix4fv(modelMatrixUniform, 1, GL_FALSE, modelMatrix);
+    glUniformMatrix4fv(viewMatrixUniform, 1, GL_FALSE, viewMatrix);
+    glUniformMatrix4fv(perspectiveProjectionMatrixUniform, 1, GL_FALSE, perspectiveProjectionMatrix);
+    glUniform3f(materialColorUniform, 0.0f, 1.0f, 1.0f);
 
-    squareVertices[6] = 0.0f;
-    squareVertices[7] = 1.0f;
-    squareVertices[8] = 0.0f;
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo_sphere_elements);
+    glDrawElements(GL_TRIANGLES, gNumElements, GL_UNSIGNED_SHORT, (void*)0);
 
-    squareVertices[9] = 0.0f;
-    squareVertices[10] = -1.0f;
-    squareVertices[11] = 0.0f;
+    //moon
+    push_matrix(stack, modelMatrix);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(squareVertices), squareVertices, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    rotationMatrix = vmath::rotate((float)day, 0.0f, 1.0f, 0.0f);
+    translateMatrix = vmath::translate(1.0f, 0.0f, 0.0f);
+    scaleMatrix = vmath::scale(0.5f, 0.5f, 0.5f);
 
-    //draw
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    modelMatrix = modelMatrix * rotationMatrix * translateMatrix * scaleMatrix;
 
-    //--- Tilted Square ---
-    squareVertices[0] = 1.0f;
-    squareVertices[1] = -1.0f;
-    squareVertices[2] = 0.0f;
+    glUniformMatrix4fv(modelMatrixUniform, 1, GL_FALSE, modelMatrix);
+    glUniformMatrix4fv(viewMatrixUniform, 1, GL_FALSE, viewMatrix);
+    glUniformMatrix4fv(perspectiveProjectionMatrixUniform, 1, GL_FALSE, perspectiveProjectionMatrix);
 
-    squareVertices[3] = 1.0f;
-    squareVertices[4] = 1.0f;
-    squareVertices[5] = 0.0f;
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo_sphere_elements);
+    glDrawElements(GL_TRIANGLES, gNumElements, GL_UNSIGNED_SHORT, (void*)0);
 
-    squareVertices[6] = 2.41421f;
-    squareVertices[7] = 1.0f;
-    squareVertices[8] = -1.41421f;
+    pop_matrix(stack);
+    pop_matrix(stack);
 
-    squareVertices[9] = 2.41421f;
-    squareVertices[10] = -1.0f;
-    squareVertices[11] = -1.41421f;
-
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(squareVertices), squareVertices, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    //draw
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-    //unbind vao
     glBindVertexArray(0);
-
-    //stop using OpenGL program object
     glUseProgram(0);
 
-    //swap the buffers
     SwapBuffers(ghdc);
 }
 
@@ -773,27 +743,29 @@ void UnInitialize(void)
         gbFullscreen = false;
     }
 
-    //delete textures
-    glDeleteTextures(1, &checker_texture);
-
-    //release vao 
-    if(vao)
+    if(stack)
     {
-        glDeleteVertexArrays(1, &vao);
-        vao = 0;
+        delete_stack(stack);
+        stack = NULL;
     }
 
-    //release vbo
-    if(vbo_position)
+    //release vao and vbo for square
+    if(vao_sphere)
     {
-        glDeleteBuffers(1, &vbo_position);
-        vbo_position = 0;
+        glDeleteVertexArrays(1, &vao_sphere);
+        vao_sphere = 0;
     }
 
-    if(vbo_texcoord)
+    if(vbo_sphere_position)
     {
-        glDeleteVertexArrays(1, &vbo_texcoord);
-        vbo_texcoord = 0;
+        glDeleteBuffers(1, &vbo_sphere_position);
+        vbo_sphere_position = 0;
+    }
+
+    if(vbo_sphere_elements)
+    {
+        glDeleteBuffers(1, &vbo_sphere_elements);
+        vbo_sphere_elements = 0;
     }
 
     //safe shader cleanup
@@ -856,3 +828,129 @@ void UnInitialize(void)
         gpFile = NULL;
     }
 }
+
+struct Stack* create_stack()
+{
+    //variable declarations
+    struct Stack* temp = NULL;
+
+    //code
+    temp = (struct Stack*)calloc(1, sizeof(struct Stack));
+    if(temp == NULL)
+    {
+        fprintf(gpFile, "Error : failed to allocate memory for stack.\n");
+        DestroyWindow(ghwnd);
+    }
+
+    return (temp);
+}
+
+void push_matrix(struct Stack* stack, mat4 curr_matrix)
+{
+    //variable declarations
+    struct Stack* temp = NULL;
+    struct Stack* curr = NULL;
+
+    //code
+    if(stack == NULL)
+    {
+        stack->matrix = curr_matrix;
+        stack->next = NULL;
+    }
+    else
+    {
+        curr = (struct Stack*)calloc(1, sizeof(struct Stack));
+        if(curr == NULL)
+        {
+            fprintf(gpFile, "Error : failed to allocate memory for stack.\n");
+            DestroyWindow(ghwnd);   
+        }
+        curr->matrix = curr_matrix;
+        curr->next = NULL;
+
+        temp = stack;
+        while(temp->next != NULL)
+        {
+            temp = temp->next;
+        }
+        temp->next = curr;
+    }
+}
+
+mat4 pop_matrix(struct Stack* stack)
+{
+    //variable declarations
+    struct Stack* temp = NULL;
+    struct Stack* prev = NULL;
+    mat4 matrix;
+
+    //code
+    if(stack->next == NULL)
+    {
+        matrix = stack->matrix;
+        if(stack)
+        {
+            free(stack);
+        }
+        return (matrix);
+    }
+    else
+    {
+        temp = stack;
+        prev = temp;
+        while(temp->next != NULL)
+        {
+            prev = temp;
+            temp = temp->next;
+        }
+        matrix = temp->matrix;
+        
+        prev->next = NULL;
+        if(temp)
+        {
+            free(temp);
+        }
+        return (matrix);
+    }
+
+    fprintf(gpFile, "Error : stack underflow.\n");
+    DestroyWindow(ghwnd);
+}
+
+mat4 peek_matrix(struct Stack* stack)
+{
+    //variable declarations
+    struct Stack* temp = NULL;
+    mat4 matrix;
+
+    //code
+    temp = stack;
+    while(temp->next != NULL)
+    {
+        temp = temp->next;
+    }
+
+    matrix = temp->matrix;
+    return (matrix);
+}
+
+void delete_stack(struct Stack* stack)
+{
+    //variable declarations
+    struct Stack* temp = NULL;
+    struct Stack* curr = NULL;
+
+    //code
+    temp = stack;
+    while(temp != NULL)
+    {
+        curr = temp;
+        temp = temp->next;
+
+        if(curr)
+        {
+            free(curr);
+        }
+    }
+}
+

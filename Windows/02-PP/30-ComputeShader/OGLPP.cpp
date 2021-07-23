@@ -20,9 +20,6 @@
 #define VK_F       0x46            //virtual key code of F key
 #define VK_f       0x60            //virtual key code of f key
 
-#define CHECK_IMAGE_WIDTH   64     //texture width
-#define CHECK_IMAGE_HEIGHT  64     //texture height
-
 //namespaces
 using namespace vmath;
 
@@ -51,20 +48,27 @@ bool gbFullscreen = false;         //flag indicating whether window is fullscree
 
 FILE*  gpFile = NULL;              //log file
 
-GLuint vertexShaderObject;         //handle to vertex shader object
-GLuint fragmentShaderObject;       //handle to fragment shader object
-GLuint shaderProgramObject;        //handle to shader program object
+GLuint vertexShaderObject;         
+GLuint fragmentShaderObject;       
+GLuint shaderProgramObject;        
 
-GLuint vao;                        //handle to vertex array object for square
-GLuint vbo_position;               //handle to vertex buffer object for vertices of square
-GLuint vbo_texcoord;               //handle to vertex buffer object for texcoords of square
-GLuint mvpMatrixUniform;           //handle to mvp matrix uniform in vertex shader      
-GLuint textureSamplerUniform;      //handle to texture sampler uniform in fragment shader
+GLuint mvpMatrixUniform;   
+
+GLuint computeShaderObject;
+GLuint computeProgramObject;
+
+GLuint widthUniform;
+GLuint heightUniform;
+GLuint timerUniform;   
+
+GLuint vao;                                   
+GLuint ssbo;
 
 mat4 perspectiveProjectionMatrix;  
 
-GLubyte checkImage[CHECK_IMAGE_HEIGHT][CHECK_IMAGE_WIDTH][4];
-GLuint checker_texture;
+const int mesh_width = 1024;
+const int mesh_height = 1024;
+float animation_time = 0.0f;
 
 //windows entry point function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -77,7 +81,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
     WNDCLASSEX wndclass;                                   //structure holding window class attributes
     MSG msg;                                               //structure holding message attributes
     HWND hwnd;                                             //handle to a window
-    TCHAR szAppName[] = TEXT("OpenGL : Checkerboard");     //name of window class
+    TCHAR szAppName[] = TEXT("Compute Shader");            //name of window class
 
     int cxScreen, cyScreen;                                //screen width and height for centering window
     int init_x, init_y;                                    //top-left coordinates of centered window
@@ -308,7 +312,6 @@ void Initialize(void)
     //function declarations
     void Resize(int, int);          //warm-up call
     void UnInitialize(void);        //release resources
-    void loadGLTexture(void);       //load procedural texture
 
     //variable declarations
     PIXELFORMATDESCRIPTOR pfd;      //structure describing the pixel format
@@ -403,13 +406,10 @@ void Initialize(void)
         "#version 450 core"                                         \
         "\n"                                                        \
         "in vec4 vPosition;"                                        \
-        "in vec2 vTexCoord;"                                        \
         "uniform mat4 u_mvpMatrix;"                                 \
-        "out vec2 out_texcoord;"
         "void main(void)"                                           \
         "{"                                                         \
         "   gl_Position = u_mvpMatrix * vPosition;"                 \
-        "   out_texcoord = vTexCoord;"                              \
         "}";
 
     //provide source code to shader object
@@ -450,14 +450,12 @@ void Initialize(void)
 
     //shader source code
     const GLchar* fragmentShaderSourceCode = 
-        "#version 450 core"                                          \
-        "\n"                                                         \
-        "in vec2 out_texcoord;"                                      \
-        "out vec4 FragColor;"                                        \
-        "uniform sampler2D u_textureSampler;"                        \
-        "void main(void)"                                            \
-        "{"                                                          \
-        "   FragColor = texture(u_textureSampler, out_texcoord);"    \
+        "#version 450 core"                             \
+        "\n"                                            \
+        "out vec4 FragColor;"                           \
+        "void main(void)"                               \
+        "{"                                             \
+        "   FragColor = vec4(1.0f, 0.5f, 0.0f, 1.0f);"  \
         "}";
 
     //provide source code to shader object 
@@ -501,9 +499,6 @@ void Initialize(void)
     //binding of shader program object with vertex shader position attribute
     glBindAttribLocation(shaderProgramObject, AMC_ATTRIBUTE_POSITION, "vPositon");
 
-    //binding of shader program object with vertex shader texcoord attribute
-    glBindAttribLocation(shaderProgramObject, AMC_ATTRIBUTE_TEXCOORD, "vTexCoord");
-
     //link shader program 
     glLinkProgram(shaderProgramObject);
 
@@ -531,38 +526,109 @@ void Initialize(void)
     //get MVP uniform location
     mvpMatrixUniform = glGetUniformLocation(shaderProgramObject, "u_mvpMatrix"); 
 
-    //get texture sampler uniform location
-    textureSamplerUniform = glGetUniformLocation(shaderProgramObject, "u_textureSampler");
+    //--- Compute Shader ---
+    computeShaderObject = glCreateShader(GL_COMPUTE_SHADER);
 
-    //texcoord data of square
-    const GLfloat squareTexcoord[] =
+    const GLchar* computeShaderSourceCode = 
+        "#version 450 core"                                                                 \
+        "\n"                                                                                \
+
+        "layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;"                 \
+        "layout (std430, binding = 0) buffer ssbo"                                          \
+        "{"                                                                                 \
+        "   vec4 position[];"                                                               \
+        "};"                                                                                \
+
+        "uniform int width;"                                                                \
+        "uniform int height;"                                                               \
+        "uniform float timer;"                                                              \
+        "const float frequency = 4.0f;"                                                     \
+
+        "void main(void)"                                                                   \
+        "{"                                                                                 \
+        "   uint x = gl_GlobalInvocationID.x;"                                              \
+        "   uint y = gl_GlobalInvocationID.y;"                                              \
+
+        "   float u = x / float(width);"                                                    \
+        "   float v = y / float(height);"                                                   \
+
+        "   u = u * 2.0f - 1.0f;"                                                           \
+        "   v = v * 2.0f - 1.0f;"                                                           \
+        "   float w = sin(u * frequency + timer) * cos(v * frequency + timer) * 0.5f;"      \
+        
+        "   position[y * width + x] = vec4(u, w, v, 1.0f);"                                 \
+        "}";
+
+    //provide source code to shader object 
+    glShaderSource(computeShaderObject, 1, (const GLchar**)&computeShaderSourceCode, NULL);
+
+    //compile shader
+    glCompileShader(computeShaderObject);
+
+    //shader compilation error checking
+    glGetShaderiv(computeShaderObject, GL_COMPILE_STATUS, &shaderCompiledStatus);
+    if(shaderCompiledStatus == GL_FALSE)
     {
-        1.0f, 1.0f,
-        0.0f, 1.0f, 
-        0.0f, 0.0f,
-        1.0f, 0.0f
-    };
+        glGetShaderiv(computeShaderObject, GL_INFO_LOG_LENGTH, &infoLogLength);
+        if(infoLogLength > 0)
+        {
+            szInfoLog = (GLchar*)malloc(sizeof(GLchar) * infoLogLength);
+            if(szInfoLog != NULL)
+            {
+                GLsizei written;
+                glGetShaderInfoLog(computeShaderObject, infoLogLength, &written, szInfoLog);
+                fprintf(gpFile, "Compute Shader Compilation Log : %s\n", szInfoLog);
+                free(szInfoLog);
+                DestroyWindow(ghwnd);
+            }
+        }
+    }
+
+    fprintf(gpFile, "----- Compute Shader Compiled Successfully -----\n");
+
+    //--- Shader Program ---
+    computeProgramObject = glCreateProgram();
+    glAttachShader(computeProgramObject, computeShaderObject);
+    glLinkProgram(computeProgramObject);
+    
+    //shader linking error checking
+    glGetProgramiv(computeProgramObject, GL_LINK_STATUS, &shaderProgramLinkStatus);
+    if(shaderProgramLinkStatus == GL_FALSE)
+    {
+        glGetProgramiv(computeProgramObject, GL_INFO_LOG_LENGTH, &infoLogLength);
+        if(infoLogLength > 0)
+        {
+            szInfoLog = (GLchar*)malloc(sizeof(GLchar) * infoLogLength);
+            if(szInfoLog != NULL)
+            {
+                GLsizei written;
+                glGetProgramInfoLog(computeProgramObject, infoLogLength, &written, szInfoLog);
+                fprintf(gpFile, "Compute Shader Program Link Log : %s\n", szInfoLog);
+                DestroyWindow(ghwnd);
+            }
+        }
+    }
+
+    fprintf(gpFile, "----- Compute Shader Linked Successfully -----\n");
+
+    //get uniform locations
+    widthUniform = glGetUniformLocation(computeProgramObject, "width");
+    heightUniform = glGetUniformLocation(computeProgramObject, "height");
+    timerUniform = glGetUniformLocation(computeProgramObject, "timer");
 
     //setup vao and vbo
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
+        glGenBuffers(1, &ssbo);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, mesh_width * mesh_height * 4 * sizeof(GLfloat), NULL, GL_DYNAMIC_DRAW);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-    glGenBuffers(1, &vbo_position);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
-    glBufferData(GL_ARRAY_BUFFER, 3 * 4 * sizeof(GLfloat), NULL, GL_DYNAMIC_DRAW);
-
-    glVertexAttribPointer(AMC_ATTRIBUTE_POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-    glEnableVertexAttribArray(AMC_ATTRIBUTE_POSITION);
-
-    glGenBuffers(1, &vbo_texcoord);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_texcoord);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(squareTexcoord), squareTexcoord, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(AMC_ATTRIBUTE_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0, NULL);
-    glEnableVertexAttribArray(AMC_ATTRIBUTE_TEXCOORD);
-
-    //unbind buffers
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ARRAY_BUFFER, ssbo);
+            glVertexAttribPointer(AMC_ATTRIBUTE_POSITION, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+            glEnableVertexAttribArray(AMC_ATTRIBUTE_POSITION);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
     //smooth shading  
@@ -575,9 +641,7 @@ void Initialize(void)
 
     //quality of color and texture coordinate interpolation
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);    
-
-    //enable 2D texture memory
-    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_CULL_FACE);
 
     //set clearing color
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  
@@ -585,57 +649,8 @@ void Initialize(void)
     //set perspective projection matrix to identity
     perspectiveProjectionMatrix = mat4::identity();
 
-    loadGLTexture();
-
     //warm-up  call
     Resize(WIN_WIDTH, WIN_HEIGHT);
-}
-
-void loadGLTexture(void)
-{
-    //function declaration
-    void MakeCheckImage(void);
-
-    //code
-    MakeCheckImage();
-
-    //generate texture object
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glGenTextures(1, &checker_texture);
-    glBindTexture(GL_TEXTURE_2D, checker_texture);
-
-    //set up texture parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    //push the data to texture memory
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, CHECK_IMAGE_WIDTH, CHECK_IMAGE_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, checkImage);
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-    //set texture environment parameter
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-}
-
-void MakeCheckImage(void)
-{
-    //variable declarations
-    int i, j, c;
-
-    //code
-    for(i = 0; i < CHECK_IMAGE_HEIGHT; i++)
-    {
-        for(j = 0; j < CHECK_IMAGE_WIDTH; j++)
-        {
-            c = (((i & 0x8) == 0) ^ ((j & 0x8) == 0)) * 255;
-        
-            checkImage[i][j][0] = (GLubyte)c;
-            checkImage[i][j][1] = (GLubyte)c;
-            checkImage[i][j][2] = (GLubyte)c;
-            checkImage[i][j][3] = (GLubyte)255;
-        }
-    }
 }
 
 void Resize(int width, int height)
@@ -657,98 +672,35 @@ void Display(void)
     //variable declarations
     mat4 modelViewMatrix;
     mat4 modelViewProjectionMatrix;
-    mat4 translateMatrix;
-
-    GLfloat squareVertices[12];
 
     //code
-    //clear the color buffer and depth buffer with currrent 
-    //clearing values (set up in initilaize)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    //start using OpenGL program object
-    glUseProgram(shaderProgramObject);
+    glUseProgram(computeProgramObject);
+        glUniform1i(widthUniform, mesh_width);
+        glUniform1i(heightUniform, mesh_height);
+        glUniform1f(timerUniform, animation_time);
 
-    //OpenGL Drawing
-    //set modelview, modelviewprojection & translate matrices to identity
-    modelViewMatrix = mat4::identity();
-    modelViewProjectionMatrix = mat4::identity();
-    translateMatrix = mat4::identity();
-
-    //translate modelview matrix
-    translateMatrix = vmath::translate(0.0f, 0.0f, -3.6f);
-    modelViewMatrix = translateMatrix;
-
-    //multiply the modelview and perspective projection matrix to get modelviewprojection matrix 
-    modelViewProjectionMatrix = perspectiveProjectionMatrix * modelViewMatrix;
-
-    //pass above modelviewprojection matrix to the vertex shader in
-    //"u_mvpMatrix" shader variable
-    glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, modelViewProjectionMatrix);
-
-    //bind checker texture
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, checker_texture);
-    glUniform1i(textureSamplerUniform, 0);
-
-    //bind vao
-    glBindVertexArray(vao);
-
-    //--- Simple Square ---
-    squareVertices[0] = -2.0f;
-    squareVertices[1] = -1.0f;
-    squareVertices[2] = 0.0f;
-
-    squareVertices[3] = -2.0f;
-    squareVertices[4] = 1.0f;
-    squareVertices[5] = 0.0f;
-
-    squareVertices[6] = 0.0f;
-    squareVertices[7] = 1.0f;
-    squareVertices[8] = 0.0f;
-
-    squareVertices[9] = 0.0f;
-    squareVertices[10] = -1.0f;
-    squareVertices[11] = 0.0f;
-
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(squareVertices), squareVertices, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    //draw
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-    //--- Tilted Square ---
-    squareVertices[0] = 1.0f;
-    squareVertices[1] = -1.0f;
-    squareVertices[2] = 0.0f;
-
-    squareVertices[3] = 1.0f;
-    squareVertices[4] = 1.0f;
-    squareVertices[5] = 0.0f;
-
-    squareVertices[6] = 2.41421f;
-    squareVertices[7] = 1.0f;
-    squareVertices[8] = -1.41421f;
-
-    squareVertices[9] = 2.41421f;
-    squareVertices[10] = -1.0f;
-    squareVertices[11] = -1.41421f;
-
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_position);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(squareVertices), squareVertices, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    //draw
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-    //unbind vao
-    glBindVertexArray(0);
-
-    //stop using OpenGL program object
+        glDispatchCompute(mesh_width/8, mesh_height/8, 1);
     glUseProgram(0);
 
-    //swap the buffers
+    glUseProgram(shaderProgramObject);
+        modelViewMatrix = mat4::identity();
+        modelViewProjectionMatrix = mat4::identity();
+        modelViewProjectionMatrix = perspectiveProjectionMatrix * modelViewMatrix;
+
+        glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, modelViewProjectionMatrix);
+
+        glBindVertexArray(vao);
+        glDrawArrays(GL_POINTS, 0, mesh_width * mesh_height);
+        glBindVertexArray(0);
+    glUseProgram(0);
+
+    //update 
+    animation_time = animation_time + 0.01f;
+    if(animation_time >= 360.0f)
+        animation_time = 0.0f;
+
     SwapBuffers(ghdc);
 }
 
@@ -773,9 +725,6 @@ void UnInitialize(void)
         gbFullscreen = false;
     }
 
-    //delete textures
-    glDeleteTextures(1, &checker_texture);
-
     //release vao 
     if(vao)
     {
@@ -784,16 +733,10 @@ void UnInitialize(void)
     }
 
     //release vbo
-    if(vbo_position)
+    if(ssbo)
     {
-        glDeleteBuffers(1, &vbo_position);
-        vbo_position = 0;
-    }
-
-    if(vbo_texcoord)
-    {
-        glDeleteVertexArrays(1, &vbo_texcoord);
-        vbo_texcoord = 0;
+        glDeleteBuffers(1, &ssbo);
+        ssbo = 0;
     }
 
     //safe shader cleanup
@@ -824,6 +767,10 @@ void UnInitialize(void)
         shaderProgramObject = 0;
         glUseProgram(0);
     }
+
+    glDetachShader(computeProgramObject, computeShaderObject);
+    glDeleteShader(computeShaderObject);
+    glDeleteProgram(computeProgramObject);
 
     //HGLRC : NULL means calling thread's current rendering context 
     //        is no longer current as well as it releases the device 
