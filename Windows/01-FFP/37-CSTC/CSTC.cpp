@@ -390,7 +390,7 @@ void Display(void)
             glVertex3f(x, y, 0.0f);
         }
     glEnd();
-
+    
     //square
     //45 degrees = 0.785375 radians
     glBegin(GL_LINE_LOOP);

@@ -782,7 +782,7 @@ function render()
         gl.useProgram(occluded_shaderProgramObject);
 
         //white sphere
-        gl.uniform3f(colorUniform, 1.0, 1.0, 1.0);
+        gl.uniform3f(colorUniform, 0.984, 0.5859, 0.004);
 
         mat4.translate(modelViewProjectionMatrix, perspectiveProjectionMatrix, [lightPosition[0], lightPosition[1], lightPosition[2]]);
         gl.uniformMatrix4fv(mvpMatrixUniform, false, modelViewProjectionMatrix);
@@ -790,7 +790,7 @@ function render()
         sphere.draw();
         
         //black occluding scene
-        gl.uniform3f(colorUniform, 0.1, 0.1, 0.1);
+        gl.uniform3f(colorUniform, 0.09, 0.058, 0.0);
 
         //cube
         mat4.translate(modelViewProjectionMatrix, perspectiveProjectionMatrix, [0.0, 0.0, -10.0]);
@@ -901,35 +901,35 @@ function render()
 function uninitialize()
 {
     //release textures
-    if(occluded_texture)
+    if(occluded_color_texture)
     {
         gl.deleteTexture(occluded_texture);
         occluded_texture = 0;
     }
 
-    if(scene_texture)
+    if(occluded_depth_texture)
+    {
+        gl.deleteTexture(occluded_depth_texture);
+        occluded_depth_texture = 0;
+    }
+
+    if(scene_color_texture)
     {
         gl.deleteTexture(occluded_texture);
         occluded_texture = 0;
     }
 
-    //release fbo and rbo
-    if(rbo_occluded)
+    if(scene_depth_texture)
     {
-        gl.deleteRenderbuffer(rbo_occluded);
-        rbo_occluded = 0;
+        gl.deleteTexture(scene_depth_texture);
+        scene_depth_texture = 0;
     }
 
+    //release fbo 
     if(fbo_occluded)
     {
         gl.deleteFramebuffer(fbo_occluded);
         fbo_occluded = 0;
-    }
-
-    if(rbo_scene)
-    {
-        gl.deleteRenderbuffer(rbo_scene);
-        rbo_scene = 0;
     }
 
     if(fbo_scene)
