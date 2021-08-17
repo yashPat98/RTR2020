@@ -1,15 +1,13 @@
+//onload function
 function main()
-
-//get canvas from DOM
-var canvas = document.getElementById("YIP") 
-if(!canvas)
 {
-    console.log("failed to get canvas")
-}
-else
-{
-    console.log("canvas is successfully obtained")
+    //get <canvas> element
+    canvas = document.getElementById("AMC");
+    if(!canvas)
+        console.log("Obtaining Canvas Failed\n");
+    else
+        console.log("Obtaining Canvas Succeeded\n");
+
+    console.log("Hello World.\n");
 }
 
-//retrive height and width of canvas
-console.log()
