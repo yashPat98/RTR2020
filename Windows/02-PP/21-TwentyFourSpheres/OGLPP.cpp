@@ -742,7 +742,7 @@ void Resize(int width, int height)
     //set viewport transformation
     glViewport(0, 0, (GLsizei)width, (GLsizei)height);
 
-    perspectiveProjectionMatrix = vmath::perspective(45.0f, (float)width / (float)height, 0.1f, 100.0f);
+    perspectiveProjectionMatrix = vmath::perspective(45.0f, (float)(width * 6) / (float)(height * 4), 0.1f, 100.0f);
 }
 
 void Display(void)
@@ -753,9 +753,6 @@ void Display(void)
     //variable declarations
     mat4 modelMatrix;
     mat4 viewMatrix;
-
-    GLfloat xCenter;
-    GLfloat yCenter;
 
     //code
     //clear the color buffer and depth buffer with currrent 
@@ -807,17 +804,6 @@ void Display(void)
         glUniform1i(LKeyPressedUniform, 0);
     }
 
-    if(width <= height)
-    {
-        xCenter = 15.5f / 2.0f;
-        yCenter = (15.5f * (GLfloat)height * 4.0f / (GLfloat)(width * 6.0f)) / 2.0f;
-    }
-    else
-    {
-        xCenter = (15.5f * (GLfloat)width * 6.0f / (GLfloat)(height * 4.0f)) / 2.0f;
-        yCenter = 15.5f / 2.0f;
-    }
-
     //translate model matrix
     modelMatrix = vmath::translate(0.0f, 0.0f, -2.0f);
 
@@ -851,14 +837,7 @@ void Display(void)
 
 void DrawSpheres(void)
 {
-    //variable declarations
-    mat4 modelMatrix;
-
     //code
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    Resize(width / 4, height / 6);
-
-    //bind vao
     glBindVertexArray(vao_sphere);
 
     // --- Emerald ---

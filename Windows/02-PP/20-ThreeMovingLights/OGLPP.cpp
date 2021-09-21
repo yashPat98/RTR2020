@@ -102,11 +102,6 @@ mat4 perspectiveProjectionMatrix;
 
 struct LIGHT light[3];
 
-vec4 La;
-vec4 Ld;
-vec4 Ls;
-vec4 lightPosition;
-
 vec4 Ka;
 vec4 Kd;
 vec4 Ks;

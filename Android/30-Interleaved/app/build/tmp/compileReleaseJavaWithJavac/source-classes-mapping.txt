@@ -1,0 +1,8 @@
+com/RTR/Interleaved/GLESMacros.java
+ com.RTR.Interleaved.GLESMacros
+com/RTR/Interleaved/BuildConfig.java
+ com.RTR.Interleaved.BuildConfig
+com/RTR/Interleaved/GLESView.java
+ com.RTR.Interleaved.GLESView
+com/RTR/Interleaved/MainActivity.java
+ com.RTR.Interleaved.MainActivity

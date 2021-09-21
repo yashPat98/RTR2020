@@ -1,0 +1,8 @@
+com/RTR/Square/GLESMacros.java
+ com.RTR.Square.GLESMacros
+com/RTR/Square/MainActivity.java
+ com.RTR.Square.MainActivity
+com/RTR/Square/GLESView.java
+ com.RTR.Square.GLESView
+com/RTR/Square/BuildConfig.java
+ com.RTR.Square.BuildConfig

@@ -1,0 +1,19 @@
+--------------------------------------------------------------------------
+-> Program started successfully
+--------------------------------------------------------------------------
+-> Device Info
+Name           : NVIDIA GeForce GTX 1050 Ti
+VRAM           : 4018 MB
+--------------------------------------------------------------------------
+-> Driver Info
+Driver Type    : Hardware Type.
+Feature Level  : 11.0
+--------------------------------------------------------------------------
+-> vertex shader compiled successfully.
+--------------------------------------------------------------------------
+-> pixel shader compiled successfully.
+Error : DirectX::CreateWICTextureFromFile() failed.
+Error : loadD3DTexture() failed to load Smiley.bmp
+--------------------------------------------------------------------------
+-> Program completed successfully.
+--------------------------------------------------------------------------

@@ -1,0 +1,8 @@
+com/RTR/Pyramid/GLESMacros.java
+ com.RTR.Pyramid.GLESMacros
+com/RTR/Pyramid/BuildConfig.java
+ com.RTR.Pyramid.BuildConfig
+com/RTR/Pyramid/GLESView.java
+ com.RTR.Pyramid.GLESView
+com/RTR/Pyramid/MainActivity.java
+ com.RTR.Pyramid.MainActivity

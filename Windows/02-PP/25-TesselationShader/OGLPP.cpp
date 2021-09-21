@@ -49,8 +49,8 @@ bool gbFullscreen = false;         //flag indicating whether window is fullscree
 FILE*  gpFile = NULL;              //log file
 
 GLuint vertexShaderObject;         
-GLuint tesellationControlShaderObject; 
-GLuint tesellationEvaluationShaderObject;      
+GLuint tessellationControlShaderObject; 
+GLuint tessellationEvaluationShaderObject;      
 GLuint fragmentShaderObject;
 GLuint shaderProgramObject;        
 
@@ -449,10 +449,10 @@ void Initialize(void)
     fprintf(gpFile, "\n----- Vertex Shader Compiled Successfully -----\n");
 
     //Tesselation Control Shader
-    tesellationControlShaderObject = glCreateShader(GL_TESS_CONTROL_SHADER);
+    tessellationControlShaderObject = glCreateShader(GL_TESS_CONTROL_SHADER);
     
     //shader source code
-    const GLchar* tesellationControlShaderSourceCode = 
+    const GLchar* tessellationControlShaderSourceCode = 
         "#version 450 core"                             \
         "\n"                                            \
         
@@ -468,23 +468,23 @@ void Initialize(void)
         "}";
 
     //provide source code to shader object 
-    glShaderSource(tesellationControlShaderObject, 1, (const GLchar**)&tesellationControlShaderSourceCode, NULL);
+    glShaderSource(tessellationControlShaderObject, 1, (const GLchar**)&tessellationControlShaderSourceCode, NULL);
 
     //compile shader
-    glCompileShader(tesellationControlShaderObject);
+    glCompileShader(tessellationControlShaderObject);
 
     //shader compilation error checking
-    glGetShaderiv(tesellationControlShaderObject, GL_COMPILE_STATUS, &shaderCompiledStatus);
+    glGetShaderiv(tessellationControlShaderObject, GL_COMPILE_STATUS, &shaderCompiledStatus);
     if(shaderCompiledStatus == GL_FALSE)
     {
-        glGetShaderiv(tesellationControlShaderObject, GL_INFO_LOG_LENGTH, &infoLogLength);
+        glGetShaderiv(tessellationControlShaderObject, GL_INFO_LOG_LENGTH, &infoLogLength);
         if(infoLogLength > 0)
         {
             szInfoLog = (GLchar*)malloc(sizeof(GLchar) * infoLogLength);
             if(szInfoLog != NULL)
             {
                 GLsizei written;
-                glGetShaderInfoLog(tesellationControlShaderObject, infoLogLength, &written, szInfoLog);
+                glGetShaderInfoLog(tessellationControlShaderObject, infoLogLength, &written, szInfoLog);
                 fprintf(gpFile, "Tesselation Control Shader Compilation Log : %s\n", szInfoLog);
                 free(szInfoLog);
                 DestroyWindow(ghwnd);
@@ -495,10 +495,10 @@ void Initialize(void)
     fprintf(gpFile, "----- Tesselation Control Shader Compiled Successfully -----\n");
 
     //Tesselation Evaluation Shader
-    tesellationEvaluationShaderObject = glCreateShader(GL_TESS_EVALUATION_SHADER);
+    tessellationEvaluationShaderObject = glCreateShader(GL_TESS_EVALUATION_SHADER);
     
     //shader source code
-    const GLchar* tesellationEvaluationShaderSourceCode = 
+    const GLchar* tessellationEvaluationShaderSourceCode = 
         "#version 450 core"                             \
         "\n"                                            \
         
@@ -519,23 +519,23 @@ void Initialize(void)
         "}";
 
     //provide source code to shader object 
-    glShaderSource(tesellationEvaluationShaderObject, 1, (const GLchar**)&tesellationEvaluationShaderSourceCode, NULL);
+    glShaderSource(tessellationEvaluationShaderObject, 1, (const GLchar**)&tessellationEvaluationShaderSourceCode, NULL);
 
     //compile shader
-    glCompileShader(tesellationEvaluationShaderObject);
+    glCompileShader(tessellationEvaluationShaderObject);
 
     //shader compilation error checking
-    glGetShaderiv(tesellationEvaluationShaderObject, GL_COMPILE_STATUS, &shaderCompiledStatus);
+    glGetShaderiv(tessellationEvaluationShaderObject, GL_COMPILE_STATUS, &shaderCompiledStatus);
     if(shaderCompiledStatus == GL_FALSE)
     {
-        glGetShaderiv(tesellationEvaluationShaderObject, GL_INFO_LOG_LENGTH, &infoLogLength);
+        glGetShaderiv(tessellationEvaluationShaderObject, GL_INFO_LOG_LENGTH, &infoLogLength);
         if(infoLogLength > 0)
         {
             szInfoLog = (GLchar*)malloc(sizeof(GLchar) * infoLogLength);
             if(szInfoLog != NULL)
             {
                 GLsizei written;
-                glGetShaderInfoLog(tesellationEvaluationShaderObject, infoLogLength, &written, szInfoLog);
+                glGetShaderInfoLog(tessellationEvaluationShaderObject, infoLogLength, &written, szInfoLog);
                 fprintf(gpFile, "Tesselation Evaluation Shader Compilation Log : %s\n", szInfoLog);
                 free(szInfoLog);
                 DestroyWindow(ghwnd);
@@ -599,10 +599,10 @@ void Initialize(void)
     glAttachShader(shaderProgramObject, vertexShaderObject);
 
     //attach tesellation control shader to shader program
-    glAttachShader(shaderProgramObject, tesellationControlShaderObject);
+    glAttachShader(shaderProgramObject, tessellationControlShaderObject);
 
     //attach tesellation evaluation shader to shader program
-    glAttachShader(shaderProgramObject, tesellationEvaluationShaderObject);
+    glAttachShader(shaderProgramObject, tessellationEvaluationShaderObject);
 
     //attach fragment shader to shader program
     glAttachShader(shaderProgramObject, fragmentShaderObject);

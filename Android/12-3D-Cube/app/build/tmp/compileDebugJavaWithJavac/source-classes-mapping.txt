@@ -1,0 +1,8 @@
+com/RTR/Cube/GLESMacros.java
+ com.RTR.Cube.GLESMacros
+com/RTR/Cube/BuildConfig.java
+ com.RTR.Cube.BuildConfig
+com/RTR/Cube/MainActivity.java
+ com.RTR.Cube.MainActivity
+com/RTR/Cube/GLESView.java
+ com.RTR.Cube.GLESView

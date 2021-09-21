@@ -1,0 +1,10 @@
+com/RTR/TwentyFourSpheres/BuildConfig.java
+ com.RTR.TwentyFourSpheres.BuildConfig
+com/RTR/TwentyFourSpheres/GLESMacros.java
+ com.RTR.TwentyFourSpheres.GLESMacros
+com/RTR/TwentyFourSpheres/Sphere.java
+ com.RTR.TwentyFourSpheres.Sphere
+com/RTR/TwentyFourSpheres/MainActivity.java
+ com.RTR.TwentyFourSpheres.MainActivity
+com/RTR/TwentyFourSpheres/GLESView.java
+ com.RTR.TwentyFourSpheres.GLESView

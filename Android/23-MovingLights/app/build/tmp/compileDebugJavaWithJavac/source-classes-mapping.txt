@@ -1,0 +1,12 @@
+com/RTR/MovingLights/Sphere.java
+ com.RTR.MovingLights.Sphere
+com/RTR/MovingLights/GLESMacros.java
+ com.RTR.MovingLights.GLESMacros
+com/RTR/MovingLights/MainActivity.java
+ com.RTR.MovingLights.MainActivity
+com/RTR/MovingLights/GLESView.java
+ com.RTR.MovingLights.GLESView
+ com.RTR.MovingLights.GLESView$1
+ com.RTR.MovingLights.GLESView$Light
+com/RTR/MovingLights/BuildConfig.java
+ com.RTR.MovingLights.BuildConfig

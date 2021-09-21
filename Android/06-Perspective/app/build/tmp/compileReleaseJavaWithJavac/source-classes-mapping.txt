@@ -1,0 +1,8 @@
+com/RTR/Perspective/GLESMacros.java
+ com.RTR.Perspective.GLESMacros
+com/RTR/Perspective/GLESView.java
+ com.RTR.Perspective.GLESView
+com/RTR/Perspective/BuildConfig.java
+ com.RTR.Perspective.BuildConfig
+com/RTR/Perspective/MainActivity.java
+ com.RTR.Perspective.MainActivity
