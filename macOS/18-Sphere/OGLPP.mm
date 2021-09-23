@@ -497,18 +497,6 @@ int main(int argc, char* argv[])
                 [[self window] toggleFullScreen:self];
                 break;
 
-            case 'L':
-            case 'l':
-                if(key_pressed == 0)
-                {
-                    key_pressed = 1;
-                }
-                else
-                {
-                    key_pressed = 0;
-                }
-                break;
-
             default:
                 break;
         }

@@ -239,7 +239,7 @@ int main(int argc, char* argv[])
         vertexShaderObject = glCreateShader(GL_VERTEX_SHADER);
         
         const GLchar *vertexShaderSource =
-            "#version 450 core"                                         \
+            "#version 410 core"                                         \
             "\n"                                                        \
             "in vec4 vPosition;"                                        \
             "uniform mat4 u_mvpMatrix;"                                 \
@@ -285,7 +285,7 @@ int main(int argc, char* argv[])
         geometryShaderObject = glCreateShader(GL_GEOMETRY_SHADER);
         
         const GLchar *geometryShaderSource =
-            "#version 450 core"                                                                             \
+            "#version 410 core"                                                                             \
             "\n"                                                                                            \
             "layout(triangles)in;"                                                                          \
             "layout(triangle_strip, max_vertices = 9)out;"                                                  \
@@ -338,7 +338,7 @@ int main(int argc, char* argv[])
         fragmentShaderObject = glCreateShader(GL_FRAGMENT_SHADER);
         
         const GLchar *fragmentShaderSource =
-            "#version 450 core"                             \
+            "#version 410 core"                             \
             "\n"                                            \
             "out vec4 FragColor;"                           \
             "void main(void)"                               \

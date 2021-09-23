@@ -244,7 +244,7 @@ int main(int argc, char* argv[])
         vertexShaderObject = glCreateShader(GL_VERTEX_SHADER);
         
         const GLchar *vertexShaderSource =
-            "#version 450 core"                                         \
+            "#version 410 core"                                         \
             "\n"                                                        \
             "in vec2 vPosition;"                                        \
             "void main(void)"                                           \
@@ -289,7 +289,7 @@ int main(int argc, char* argv[])
         tessellationControlShaderObject = glCreateShader(GL_TESS_CONTROL_SHADER);
         
         const GLchar *tessellationControlShaderSource =
-            "#version 450 core"                                                                 \
+            "#version 410 core"                                                                 \
             "\n"                                                                                \
             
             "layout(vertices = 4)out;"                                                          \
@@ -336,7 +336,7 @@ int main(int argc, char* argv[])
         tessellationEvaluationShaderObject = glCreateShader(GL_TESS_EVALUATION_SHADER);
         
         const GLchar *tessellationEvaluationShaderSource =
-            "#version 450 core"                             \
+            "#version 410 core"                             \
             "\n"                                            \
             
             "layout(isolines)in;"                           \
@@ -388,7 +388,7 @@ int main(int argc, char* argv[])
         fragmentShaderObject = glCreateShader(GL_FRAGMENT_SHADER);
         
         const GLchar *fragmentShaderSource =
-            "#version 450 core"                             \
+            "#version 410 core"                             \
             "\n"                                            \
             
             "out vec4 FragColor;"                           \
@@ -494,7 +494,7 @@ int main(int argc, char* argv[])
         //color buffer clearing color
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         
-        perspectiveProjectionMatrix = vmath::mat4::identity();
+        projectionMatrix = vmath::mat4::identity();
         uiNumberOfSegments = 1;
 
         //bind cgl and cv
@@ -544,7 +544,6 @@ int main(int argc, char* argv[])
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
         modelViewMatrix = vmath::mat4::identity();
-        mvpMatrix = vmath::mat4::identity();
         
         glUseProgram(shaderProgramObject);
             translateMatrix = vmath::translate(0.0f, 0.0f, -4.0f);

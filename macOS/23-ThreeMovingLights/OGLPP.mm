@@ -296,7 +296,7 @@ int main(int argc, char* argv[])
         pv_vertexShaderObject = glCreateShader(GL_VERTEX_SHADER);
         
         const GLchar *pv_vertexShaderSource =
-            "#version 450 core"                                                                                                         \
+            "#version 410 core"                                                                                                         \
             "\n"                                                                                                                        \
             "in vec4 vPosition;"                                                                                                        \
             "in vec3 vNormal;"                                                                                                          \
@@ -381,7 +381,7 @@ int main(int argc, char* argv[])
         pv_fragmentShaderObject = glCreateShader(GL_FRAGMENT_SHADER);
         
         const GLchar *pv_fragmentShaderSource =
-            "#version 450 core"                                 \
+            "#version 410 core"                                 \
             "\n"                                                \
             "in vec3 phong_ads_light;"                          \
             "out vec4 FragColor;"                               \
@@ -490,7 +490,7 @@ int main(int argc, char* argv[])
         pf_vertexShaderObject = glCreateShader(GL_VERTEX_SHADER);
         
         const GLchar *pf_vertexShaderSource =
-            "#version 450 core"                                                                                     \
+            "#version 410 core"                                                                                     \
             "\n"                                                                                                    \
             "in vec4 vPosition;"                                                                                    \
             "in vec3 vNormal;"                                                                                      \
@@ -551,7 +551,7 @@ int main(int argc, char* argv[])
         pf_fragmentShaderObject = glCreateShader(GL_FRAGMENT_SHADER);
         
         const GLchar *pf_fragmentShaderSource =
-            "#version 450 core"                                                                                                                     \
+            "#version 410 core"                                                                                                                     \
             "\n"                                                                                                                                    \
             "in vec3 transformed_normal;"                                                                                                           \
             "in vec3 light_direction[3];"                                                                                                           \
@@ -727,19 +727,19 @@ int main(int argc, char* argv[])
         glDepthFunc(GL_LEQUAL);
         
         //set light and material variables
-        light[0].lightAmbient = vmath::vec3(0.0f, 0.0f, 0.0f, 1.0f);
-        light[0].lightDiffuse = vmath::vec3(1.0f, 0.0f, 0.0f, 1.0f);
-        light[0].lightSpecular = vmath::vec3(1.0f, 0.0f, 0.0f, 1.0f);
+        light[0].lightAmbient = vmath::vec3(0.0f, 0.0f, 0.0f);
+        light[0].lightDiffuse = vmath::vec3(1.0f, 0.0f, 0.0f);
+        light[0].lightSpecular = vmath::vec3(1.0f, 0.0f, 0.0f);
         light[0].lightPosition = vmath::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
-        light[1].lightAmbient = vmath::vec3(0.0f, 0.0f, 0.0f, 1.0f);
-        light[1].lightDiffuse = vmath::vec3(0.0f, 1.0f, 0.0f, 1.0f);
-        light[1].lightSpecular = vmath::vec3(0.0f, 1.0f, 0.0f, 1.0f);
+        light[1].lightAmbient = vmath::vec3(0.0f, 0.0f, 0.0f);
+        light[1].lightDiffuse = vmath::vec3(0.0f, 1.0f, 0.0f);
+        light[1].lightSpecular = vmath::vec3(0.0f, 1.0f, 0.0f);
         light[1].lightPosition = vmath::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
-        light[2].lightAmbient = vmath::vec3(0.0f, 0.0f, 0.0f, 1.0f);
-        light[2].lightDiffuse = vmath::vec3(0.0f, 0.0f, 1.0f, 1.0f);
-        light[2].lightSpecular = vmath::vec3(0.0f, 0.0f, 1.0f, 1.0f);
+        light[2].lightAmbient = vmath::vec3(0.0f, 0.0f, 0.0f);
+        light[2].lightDiffuse = vmath::vec3(0.0f, 0.0f, 1.0f);
+        light[2].lightSpecular = vmath::vec3(0.0f, 0.0f, 1.0f);
         light[2].lightPosition = vmath::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
         material.materialAmbient = vmath::vec3(0.0f, 0.0f, 0.0f);
@@ -814,20 +814,20 @@ int main(int argc, char* argv[])
 
                 if(key_pressed)
                 {
-                    glUniform3fv(pv_lightAmbientUniform[0], 1, light.lightAmbient[0]);
-                    glUniform3fv(pv_lightDiffuseUniform[0], 1, light.lightDiffuse[0]);
-                    glUniform3fv(pv_lightSpecularUniform[0], 1, light.lightSpecular[0]);
-                    glUniform4fv(pv_lightPositionUniform[0], 1, light.lightPosition[0]);
+                    glUniform3fv(pv_lightAmbientUniform[0], 1, light[0].lightAmbient);
+                    glUniform3fv(pv_lightDiffuseUniform[0], 1, light[0].lightDiffuse);
+                    glUniform3fv(pv_lightSpecularUniform[0], 1, light[0].lightSpecular);
+                    glUniform4fv(pv_lightPositionUniform[0], 1, light[0].lightPosition);
 
-                    glUniform3fv(pv_lightAmbientUniform[1], 1, light.lightAmbient[1]);
-                    glUniform3fv(pv_lightDiffuseUniform[1], 1, light.lightDiffuse[1]);
-                    glUniform3fv(pv_lightSpecularUniform[1], 1, light.lightSpecular[1]);
-                    glUniform4fv(pv_lightPositionUniform[1], 1, light.lightPosition[1]);
+                    glUniform3fv(pv_lightAmbientUniform[1], 1, light[1].lightAmbient);
+                    glUniform3fv(pv_lightDiffuseUniform[1], 1, light[1].lightDiffuse);
+                    glUniform3fv(pv_lightSpecularUniform[1], 1, light[1].lightSpecular);
+                    glUniform4fv(pv_lightPositionUniform[1], 1, light[1].lightPosition);
 
-                    glUniform3fv(pv_lightAmbientUniform[2], 1, light.lightAmbient[2]);
-                    glUniform3fv(pv_lightDiffuseUniform[2], 1, light.lightDiffuse[2]);
-                    glUniform3fv(pv_lightSpecularUniform[2], 1, light.lightSpecular[2]);
-                    glUniform4fv(pv_lightPositionUniform[2], 1, light.lightPosition[2]);
+                    glUniform3fv(pv_lightAmbientUniform[2], 1, light[2].lightAmbient);
+                    glUniform3fv(pv_lightDiffuseUniform[2], 1, light[2].lightDiffuse);
+                    glUniform3fv(pv_lightSpecularUniform[2], 1, light[2].lightSpecular);
+                    glUniform4fv(pv_lightPositionUniform[2], 1, light[2].lightPosition);
 
                     glUniform3fv(pv_materialAmbientUniform, 1, material.materialAmbient);
                     glUniform3fv(pv_materialDiffuseUniform, 1, material.materialDiffuse);
@@ -847,20 +847,20 @@ int main(int argc, char* argv[])
 
                 if(key_pressed)
                 {
-                    glUniform3fv(pf_lightAmbientUniform[0], 1, light.lightAmbient[0]);
-                    glUniform3fv(pf_lightDiffuseUniform[0], 1, light.lightDiffuse[0]);
-                    glUniform3fv(pf_lightSpecularUniform[0], 1, light.lightSpecular[0]);
-                    glUniform4fv(pf_lightPositionUniform[0], 1, light.lightPosition[0]);
+                    glUniform3fv(pf_lightAmbientUniform[0], 1, light[0].lightAmbient);
+                    glUniform3fv(pf_lightDiffuseUniform[0], 1, light[0].lightDiffuse);
+                    glUniform3fv(pf_lightSpecularUniform[0], 1, light[0].lightSpecular);
+                    glUniform4fv(pf_lightPositionUniform[0], 1, light[0].lightPosition);
 
-                    glUniform3fv(pf_lightAmbientUniform[1], 1, light.lightAmbient[1]);
-                    glUniform3fv(pf_lightDiffuseUniform[1], 1, light.lightDiffuse[1]);
-                    glUniform3fv(pf_lightSpecularUniform[1], 1, light.lightSpecular[1]);
-                    glUniform4fv(pf_lightPositionUniform[1], 1, light.lightPosition[1]);
+                    glUniform3fv(pf_lightAmbientUniform[1], 1, light[1].lightAmbient);
+                    glUniform3fv(pf_lightDiffuseUniform[1], 1, light[1].lightDiffuse);
+                    glUniform3fv(pf_lightSpecularUniform[1], 1, light[1].lightSpecular);
+                    glUniform4fv(pf_lightPositionUniform[1], 1, light[1].lightPosition);
 
-                    glUniform3fv(pf_lightAmbientUniform[2], 1, light.lightAmbient[2]);
-                    glUniform3fv(pf_lightDiffuseUniform[2], 1, light.lightDiffuse[2]);
-                    glUniform3fv(pf_lightSpecularUniform[2], 1, light.lightSpecular[2]);
-                    glUniform4fv(pf_lightPositionUniform[2], 1, light.lightPosition[2]);
+                    glUniform3fv(pf_lightAmbientUniform[2], 1, light[2].lightAmbient);
+                    glUniform3fv(pf_lightDiffuseUniform[2], 1, light[2].lightDiffuse);
+                    glUniform3fv(pf_lightSpecularUniform[2], 1, light[2].lightSpecular);
+                    glUniform4fv(pf_lightPositionUniform[2], 1, light[2].lightPosition);
 
                     glUniform3fv(pf_materialAmbientUniform, 1, material.materialAmbient);
                     glUniform3fv(pf_materialDiffuseUniform, 1, material.materialDiffuse);
@@ -874,6 +874,12 @@ int main(int argc, char* argv[])
             glBindVertexArray(0);
         
             glUseProgram(0);
+        
+        
+        //update
+        lightAngle += 0.1f;
+        if(lightAngle >= 360.0f)
+            lightAngle = 0.0f;
         
         CGLFlushDrawable((CGLContextObj)[[self openGLContext] CGLContextObj]);
         CGLUnlockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);

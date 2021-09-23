@@ -272,7 +272,7 @@ int main(int argc, char* argv[])
         vertexShaderObject = glCreateShader(GL_VERTEX_SHADER);
         
         const GLchar *vertexShaderSource =
-            "#version 450 core"                                                                                                     \
+            "#version 410 core"                                                                                                     \
             "\n"                                                                                                                    \
             "in vec4 vPosition;"                                                                                                    \
             "in vec3 vNormal;"                                                                                                      \
@@ -357,7 +357,7 @@ int main(int argc, char* argv[])
         fragmentShaderObject = glCreateShader(GL_FRAGMENT_SHADER);
         
         const GLchar *fragmentShaderSource =
-            "#version 450 core"                                 \
+            "#version 410 core"                                 \
             "\n"                                                \
             "in vec3 phong_ads_light;"                          \
             "out vec4 FragColor;"                               \
@@ -511,8 +511,8 @@ int main(int argc, char* argv[])
                 glEnableVertexAttribArray(AMC_ATTRIBUTE_POSITION);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-            glGenBuffers(1, &vbo_pyramid_color);
-            glBindBuffer(GL_ARRAY_BUFFER, vbo_pyramid_color);
+            glGenBuffers(1, &vbo_pyramid_normal);
+            glBindBuffer(GL_ARRAY_BUFFER, vbo_pyramid_normal);
                 glBufferData(GL_ARRAY_BUFFER, sizeof(pyramidNormals), pyramidNormals, GL_STATIC_DRAW);
                 glVertexAttribPointer(AMC_ATTRIBUTE_NORMAL, 3, GL_FLOAT, GL_FALSE, 0, NULL);
                 glEnableVertexAttribArray(AMC_ATTRIBUTE_NORMAL);
@@ -526,19 +526,19 @@ int main(int argc, char* argv[])
         glDepthFunc(GL_LEQUAL);
         
         //set light and material variables
-        light[0].lightAmbient = vec3(0.0f, 0.0f, 0.0f);
-        light[0].lightDiffuse = vec3(1.0f, 0.0f, 0.0f);
-        light[0].lightSpecular = vec3(1.0f, 0.0f, 0.0f);
-        light[0].lightPosition = vec4(2.0f, 0.0f, 0.0f, 1.0f);
+        light[0].lightAmbient = vmath::vec3(0.0f, 0.0f, 0.0f);
+        light[0].lightDiffuse = vmath::vec3(1.0f, 0.0f, 0.0f);
+        light[0].lightSpecular = vmath::vec3(1.0f, 0.0f, 0.0f);
+        light[0].lightPosition = vmath::vec4(2.0f, 0.0f, 0.0f, 1.0f);
 
-        light[1].lightAmbient = vec3(0.0f, 0.0f, 0.0f);
-        light[1].lightDiffuse = vec3(0.0f, 0.0f, 1.0f);
-        light[1].lightSpecular = vec3(0.0f, 0.0f, 1.0f);
-        light[1].lightPosition = vec4(-2.0f, 0.0f, 0.0f, 1.0f);
+        light[1].lightAmbient = vmath::vec3(0.0f, 0.0f, 0.0f);
+        light[1].lightDiffuse = vmath::vec3(0.0f, 0.0f, 1.0f);
+        light[1].lightSpecular = vmath::vec3(0.0f, 0.0f, 1.0f);
+        light[1].lightPosition = vmath::vec4(-2.0f, 0.0f, 0.0f, 1.0f);
 
-        material.materialAmbient = vec3(0.0f, 0.0f, 0.0f);
-        material.materialDiffuse = vec3(1.0f, 1.0f, 1.0f);
-        material.materialSpecular = vec3(1.0f, 1.0f, 1.0f);
+        material.materialAmbient = vmath::vec3(0.0f, 0.0f, 0.0f);
+        material.materialDiffuse = vmath::vec3(1.0f, 1.0f, 1.0f);
+        material.materialSpecular = vmath::vec3(1.0f, 1.0f, 1.0f);
         material.materialShininess = 50.0f;
 
         //bind cgl and cv
@@ -610,7 +610,7 @@ int main(int argc, char* argv[])
 
 
         //pass the uniform variables to vertex shader
-        if(LKeyPressed == 1)
+        if(key_pressed == 1)
         {
             glUniform1i(LKeyPressedUniform, 1);
 

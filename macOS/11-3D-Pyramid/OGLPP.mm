@@ -417,18 +417,18 @@ int main(int argc, char* argv[])
         };
 
         //set up vao and vbo
-        glGenVertexArrays(1, &vao_cube);
-        glBindVertexArray(vao_cube);
-            glGenBuffers(1, &vbo_cube_position);
-            glBindBuffer(GL_ARRAY_BUFFER, vbo_cube_position);
-                glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
+        glGenVertexArrays(1, &vao_pyramid);
+        glBindVertexArray(vao_pyramid);
+            glGenBuffers(1, &vbo_pyramid_position);
+            glBindBuffer(GL_ARRAY_BUFFER, vbo_pyramid_position);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(pyramidVertices), pyramidVertices, GL_STATIC_DRAW);
                 glVertexAttribPointer(AMC_ATTRIBUTE_POSITION, 3, GL_FLOAT, GL_FALSE, 0, NULL);
                 glEnableVertexAttribArray(AMC_ATTRIBUTE_POSITION);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-            glGenBuffers(1, &vbo_cube_color);
-            glBindBuffer(GL_ARRAY_BUFFER, vbo_cube_color);
-                glBufferData(GL_ARRAY_BUFFER, sizeof(cubeColor), cubeColor, GL_STATIC_DRAW);
+            glGenBuffers(1, &vbo_pyramid_color);
+            glBindBuffer(GL_ARRAY_BUFFER, vbo_pyramid_color);
+                glBufferData(GL_ARRAY_BUFFER, sizeof(pyramidColor), pyramidColor, GL_STATIC_DRAW);
                 glVertexAttribPointer(AMC_ATTRIBUTE_COLOR, 3, GL_FLOAT, GL_FALSE, 0, NULL);
                 glEnableVertexAttribArray(AMC_ATTRIBUTE_COLOR);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -500,7 +500,7 @@ int main(int argc, char* argv[])
 
         glUseProgram(shaderProgramObject);
             //pyramid
-            translateMatrix = vmath::translate(-1.5f, 0.0f, -6.0f);
+            translateMatrix = vmath::translate(0.0f, 0.0f, -5.0f);
             rotateMatrix = vmath::rotate(pyramid_rotation_angle, 0.0f, 1.0f, 0.0f);
             modelViewMatrix = translateMatrix * rotateMatrix;
             mvpMatrix  = projectionMatrix * modelViewMatrix;

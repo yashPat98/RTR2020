@@ -64,7 +64,7 @@ GLuint pf_keyPressedUniform;
 GLuint vao_sphere;
 GLuint vbo_sphere_position;
 GLuint vbo_sphere_normal;
-GLuint vbo_sphere_indices;
+GLuint vbo_sphere_elements;
 
 //variable for uniform values
 vmath::mat4 projectionMatrix;
@@ -85,8 +85,8 @@ GLfloat angle_for_z_rotation;
 
 int rotation_key_pressed;
 
-int numVertices;
-int numElements;
+int gNumVertices;
+int gNumElements;
 
 //forward declaration of class
 @interface AppDelegate:NSObject <NSApplicationDelegate, NSWindowDelegate>
@@ -660,8 +660,8 @@ int main(int argc, char* argv[])
 
         Sphere *sphere = [[Sphere alloc] init];
         [sphere getSphereVertexData:sphere_vertices :sphere_normals :sphere_textures :sphere_elements];
-        numVertices = [sphere getNumberOfSphereVertices];
-        numElements = [sphere getNumberOfSphereElements];
+        gNumVertices = [sphere getNumberOfSphereVertices];
+        gNumElements = [sphere getNumberOfSphereElements];
         
         //set up vao and vbo
         glGenVertexArrays(1, &vao_sphere);
@@ -680,8 +680,8 @@ int main(int argc, char* argv[])
                 glEnableVertexAttribArray(AMC_ATTRIBUTE_NORMAL);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-            glGenBuffers(1, &vbo_sphere_indices);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo_sphere_indices);
+            glGenBuffers(1, &vbo_sphere_elements);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo_sphere_elements);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(sphere_elements), sphere_elements, GL_STATIC_DRAW);
         glBindVertexArray(0);
         
@@ -748,7 +748,7 @@ int main(int argc, char* argv[])
         CGLLockContext((CGLContextObj)[[self openGLContext] CGLContextObj]);
         
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            modelMatrix = vmath::translate(0.0f, 0.0f -2.0f);
+            modelMatrix = vmath::translate(0.0f, 0.0f, -2.0f);
             viewMatrix = vmath::mat4::identity();
 
             switch(rotation_key_pressed)
@@ -838,9 +838,10 @@ int main(int argc, char* argv[])
 
     -(void)drawPerVertex
     {
-        GLsizei width = rect.size.width;
-        GLsizei height = rect.size.height;
-
+        NSRect rect = [self bounds];
+        GLsizei width = rect.size.width * 2;
+        GLsizei height = rect.size.height * 2;
+        
         //bind vao
         glBindVertexArray(vao_sphere);
 
@@ -1257,8 +1258,9 @@ int main(int argc, char* argv[])
 
     -(void)drawPerFragment
     {
-        GLsizei width = rect.size.width;
-        GLsizei height = rect.size.height;
+        NSRect rect = [self bounds];
+        GLsizei width = rect.size.width * 2;
+        GLsizei height = rect.size.height * 2;
 
         //bind vao
         glBindVertexArray(vao_sphere);
@@ -1761,10 +1763,11 @@ int main(int argc, char* argv[])
     {
         //code
         //release vao and vbo
-        if(vbo_sphere_indices)
+        if(vbo_sphere_elements)
         {
-            glDeleteBuffers(1, &vbo_sphere_indices);
-            vbo_sphere_indices = 0;
+            glDeleteBuffers(1, &vbo_sphere_elements
+                            );
+            vbo_sphere_elements = 0;
         }
 
         if(vbo_sphere_normal)

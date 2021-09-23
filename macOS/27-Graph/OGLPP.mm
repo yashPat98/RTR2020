@@ -3,6 +3,7 @@
 #import <Cocoa/Cocoa.h>
 #import <QuartzCore/CVDisplayLink.h>
 #import <OpenGL/GL3.h>
+#import <vector>
 #include "vmath.h"
 #include "Sphere.h"
 
@@ -263,7 +264,7 @@ int main(int argc, char* argv[])
         vertexShaderObject = glCreateShader(GL_VERTEX_SHADER);
         
         const GLchar *vertexShaderSource =
-            "#version 450 core"                                         \
+            "#version 410 core"                                         \
             "\n"                                                        \
             "in vec4 vPosition;"                                        \
             "uniform mat4 u_mvpMatrix;"                                 \
@@ -309,7 +310,7 @@ int main(int argc, char* argv[])
         fragmentShaderObject = glCreateShader(GL_FRAGMENT_SHADER);
         
         const GLchar *fragmentShaderSource =
-            "#version 450 core"                             \
+            "#version 410 core"                             \
             "\n"                                            \
             "out vec4 FragColor;"                           \
             "uniform vec3 color;"                           \
@@ -598,7 +599,7 @@ int main(int argc, char* argv[])
         glUseProgram(shaderProgramObject);
             translateMatrix = vmath::translate(0.0f, 0.0f, -2.5f);
             modelViewMatrix = translateMatrix;
-            modelViewProjectionMatrix = perspectiveProjectionMatrix * modelViewMatrix;
+            modelViewProjectionMatrix = projectionMatrix * modelViewMatrix;
 
             glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, modelViewProjectionMatrix);
             glUniform3f(colorUniform, 0.0f, 0.0f, 1.0f);

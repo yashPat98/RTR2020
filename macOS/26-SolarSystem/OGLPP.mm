@@ -264,7 +264,7 @@ int main(int argc, char* argv[])
         vertexShaderObject = glCreateShader(GL_VERTEX_SHADER);
         
         const GLchar *vertexShaderSource =
-            "#version 450 core"                                                                                     \
+            "#version 410 core"                                                                                     \
             "\n"                                                                                                    \
             
             "in vec4 vPosition;"                                                                                    \
@@ -315,7 +315,7 @@ int main(int argc, char* argv[])
         fragmentShaderObject = glCreateShader(GL_FRAGMENT_SHADER);
         
         const GLchar *fragmentShaderSource =
-            "#version 450 core"                                                                                                             \
+            "#version 410 core"                                                                                                             \
             "\n"                                                                                                                            \
             
             "uniform vec3 u_materialColor;"                                                                                                   \
@@ -496,9 +496,9 @@ int main(int argc, char* argv[])
 
         glUseProgram(shaderProgramObject);
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            viewMatrix = vmath::lookat( vmath::mat4::vec3(0.0f, 0.0f, 3.5f),
-                                        vmath::mat4::vec3(0.0f, 0.0f, 0.0f),
-                                        vmath::mat4::vec3(0.0f, 1.0f, 0.0f));
+            viewMatrix = vmath::lookat( vmath::vec3(0.0f, 0.0f, 3.5f),
+                                        vmath::vec3(0.0f, 0.0f, 0.0f),
+                                        vmath::vec3(0.0f, 1.0f, 0.0f));
 
             glUniformMatrix4fv(modelMatrixUniform, 1, GL_FALSE, modelMatrix);
             glUniformMatrix4fv(viewMatrixUniform, 1, GL_FALSE, viewMatrix);
@@ -699,8 +699,6 @@ struct Stack* create_stack()
     if(temp == NULL)
     {
         fprintf(gpFile, "Error : failed to allocate memory for stack.\n");
-        [self release];
-        [NSApp terminate:self];
     }
 
     return (temp);
@@ -724,8 +722,6 @@ void push_matrix(struct Stack* stack, vmath::mat4 curr_matrix)
         if(curr == NULL)
         {
             fprintf(gpFile, "Error : failed to allocate memory for stack.\n");
-            [self release];
-            [NSApp terminate:self]; 
         }
         curr->matrix = curr_matrix;
         curr->next = NULL;
@@ -776,11 +772,9 @@ vmath::mat4 pop_matrix(struct Stack* stack)
     }
 
     fprintf(gpFile, "Error : stack underflow.\n");
-    [self release];
-    [NSApp terminate:self];
 }
 
-mat4 peek_matrix(struct Stack* stack)
+vmath::mat4 peek_matrix(struct Stack* stack)
 {
     //variable declarations
     struct Stack* temp = NULL;
