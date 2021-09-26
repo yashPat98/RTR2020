@@ -8,7 +8,6 @@
 
 #pragma warning(disable: 4838)     //disable header warnings
 #include "XNAMath/xnamath.h"       //Direct3D math header
-#include "WICTextureLoader.h"      //Direct3D texture loader header
 
 //import libraries
 #pragma comment(lib, "user32.lib")
@@ -17,7 +16,6 @@
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
-#pragma comment(lib, "DirectXTK.lib")
 
 //symbolic constants
 #define WIN_WIDTH  800             //initial width of window  
@@ -667,14 +665,6 @@ HRESULT Initialize(void)
     pID3DBlob_VertexShaderCode = NULL;
 
     //setup vertices, normals and texcoords
-    const float square_vertices[] = 
-    {
-        -1.0f, 1.0f, 0.0f, 
-        1.0f, 1.0f, 0.0f, 
-        -1.0f, -1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f
-    };
-
     const float square_texcoords[] = 
     {
         0.0f, 0.0f,
@@ -686,7 +676,7 @@ HRESULT Initialize(void)
     //create vertex buffer for position
     D3D11_BUFFER_DESC d3d11BufferDesc;
     ZeroMemory((void*)&d3d11BufferDesc, sizeof(D3D11_BUFFER_DESC));
-    d3d11BufferDesc.ByteWidth = sizeof(float) * _ARRAYSIZE(square_vertices);
+    d3d11BufferDesc.ByteWidth = 3 * 4 * sizeof(float);
     d3d11BufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
     d3d11BufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     d3d11BufferDesc.Usage = D3D11_USAGE_DYNAMIC;
@@ -699,12 +689,6 @@ HRESULT Initialize(void)
         fclose(gpFile);
         return (hr);
     }
-
-    D3D11_MAPPED_SUBRESOURCE d3d11MappedSubresource;
-    ZeroMemory((void*)&d3d11MappedSubresource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-    gpID3D11DeviceContext->Map(gpID3D11Buffer_VertexBuffer_position, 0, D3D11_MAP_WRITE_DISCARD, 0, &d3d11MappedSubresource);
-    memcpy(d3d11MappedSubresource.pData, square_vertices, sizeof(square_vertices));
-    gpID3D11DeviceContext->Unmap(gpID3D11Buffer_VertexBuffer_position, 0);
 
     //create vertex buffer for texcoord
     ZeroMemory((void*)&d3d11BufferDesc, sizeof(D3D11_BUFFER_DESC));
@@ -722,6 +706,7 @@ HRESULT Initialize(void)
         return (hr);
     }
 
+    D3D11_MAPPED_SUBRESOURCE d3d11MappedSubresource;
     ZeroMemory((void*)&d3d11MappedSubresource, sizeof(D3D11_MAPPED_SUBRESOURCE));
     gpID3D11DeviceContext->Map(gpID3D11Buffer_VertexBuffer_texcoord, 0, D3D11_MAP_WRITE_DISCARD, 0, &d3d11MappedSubresource);
     memcpy(d3d11MappedSubresource.pData, square_texcoords, sizeof(square_texcoords));
@@ -898,43 +883,52 @@ HRESULT loadD3DTexture(ID3D11ShaderResourceView **ppID3D11ShaderResourceView)
 
     //variable declarations
     HRESULT hr;
-    D3D11_TEXTURE2D_DESC d3d11Texture2dDesc;
+    ID3D11Texture2D *pID3D11Texture2D = NULL;
+    D3D11_TEXTURE2D_DESC d3d11Texture2DDesc;
     D3D11_SUBRESOURCE_DATA d3d11SubresourceData;
     D3D11_SHADER_RESOURCE_VIEW_DESC d3d11ShaderResourceViewDesc;
-    ID3D11Texture2D *pTexture = NULL;
 
     //code
     MakeCheckImage();
 
-    ZeroMemory((void*)&d3d11Texture2dDesc, sizeof(D3D11_TEXTURE2D_DESC));
-    d3d11Texture2dDesc.Width = CHECK_IMAGE_WIDTH;
-    d3d11Texture2dDesc.Height = CHECK_IMAGE_HEIGHT;
-    d3d11Texture2dDesc.Format = DXGI_FORMAT_R8G8B8A8_UINT;
-    d3d11Texture2dDesc.Usage = D3D11_USAGE_DEFAULT;
-    d3d11Texture2dDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-    d3d11Texture2dDesc.SampleDesc.Count = 1;                               
-    d3d11Texture2dDesc.SampleDesc.Quality = 0;                             
-    d3d11Texture2dDesc.ArraySize = 1;                                    
-    d3d11Texture2dDesc.MipLevels = 1;                                       
-    d3d11Texture2dDesc.CPUAccessFlags = 0;                                
-    d3d11Texture2dDesc.MiscFlags = 0;                                       
+    //create texture 2d
+    ZeroMemory((void*)&d3d11Texture2DDesc, sizeof(D3D11_TEXTURE2D_DESC));
+    d3d11Texture2DDesc.Width = CHECK_IMAGE_WIDTH;
+    d3d11Texture2DDesc.Height = CHECK_IMAGE_HEIGHT;
+    d3d11Texture2DDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    d3d11Texture2DDesc.Usage = D3D11_USAGE_DYNAMIC;
+    d3d11Texture2DDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    d3d11Texture2DDesc.SampleDesc.Count = 1;                                
+    d3d11Texture2DDesc.SampleDesc.Quality = 0;                              
+    d3d11Texture2DDesc.ArraySize = 1;                                       
+    d3d11Texture2DDesc.MipLevels = 1;                                       
+    d3d11Texture2DDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;                                  
+    d3d11Texture2DDesc.MiscFlags = 0;                                       
 
     ZeroMemory((void*)&d3d11SubresourceData, sizeof(D3D11_SUBRESOURCE_DATA));
     d3d11SubresourceData.pSysMem = checkImage;
+    d3d11SubresourceData.SysMemPitch = CHECK_IMAGE_WIDTH * 4 * sizeof(BYTE);
 
-    hr = gpID3D11Device->CreateTexture2D(&d3d11Texture2dDesc, &d3d11SubresourceData, &pTexture);
+    hr = gpID3D11Device->CreateTexture2D(&d3d11Texture2DDesc, &d3d11SubresourceData, &pID3D11Texture2D);
     if(FAILED(hr))
     {
         fopen_s(&gpFile, gLogFileName, "a+");
-        fprintf(gpFile, "Error : DirectX::CreateWICTextureFromFile() failed.\n");
+        fprintf(gpFile, "Error : ID3D11Device::CreateTexture2D() failed.\n");
         fclose(gpFile);
-        return (hr);
     }
 
+    //create shader resource view
     ZeroMemory((void*)&d3d11ShaderResourceViewDesc, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
-    d3d11ShaderResourceViewDesc.ViewDimension = 
+    d3d11ShaderResourceViewDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    d3d11ShaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 
-    hr = gpID3D11Device->CreateShaderResourceView(pTexture, NULL, ppID3D11ShaderResourceView);
+    hr = gpID3D11Device->CreateShaderResourceView(pID3D11Texture2D, NULL, ppID3D11ShaderResourceView);
+    if(FAILED(hr))
+    {
+        fopen_s(&gpFile, gLogFileName, "a+");
+        fprintf(gpFile, "Error : ID3D11Device::CreateShaderResourceView() failed.\n");
+        fclose(gpFile);
+    }
 
     return (hr);
 }
@@ -951,10 +945,10 @@ void MakeCheckImage(void)
         {
             c = (((i & 0x8) == 0) ^ ((j & 0x8) == 0)) * 255;
         
-            checkImage[i][j] = (BYTE)c;
-            checkImage[i][j] = (BYTE)c;
-            checkImage[i][j] = (BYTE)c;
-            checkImage[i][j] = (BYTE)255;
+            checkImage[i][j][0] = (BYTE)c;
+            checkImage[i][j][1] = (BYTE)c;
+            checkImage[i][j][2] = (BYTE)c;
+            checkImage[i][j][3] = (BYTE)255;
         }
     }
 }
@@ -1088,12 +1082,17 @@ void Display(void)
     UINT stride;
     UINT offset;
 
+    D3D11_MAPPED_SUBRESOURCE d3d11MappedSubresource;
+    float square_vertices[12];
+
     //code
     gpID3D11DeviceContext->ClearRenderTargetView(gpID3D11RenderTargetView, gClearColor);
     gpID3D11DeviceContext->ClearDepthStencilView(gpID3D11DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
+    //simple square
+
     //set matrices 
-    worldMatrix = XMMatrixTranslation(0.0f, 0.0f, 4.0f);
+    worldMatrix = XMMatrixTranslation(0.0f, 0.0f, 3.6f);
     viewMatrix = XMMatrixIdentity();
     wvpMatrix = worldMatrix * viewMatrix * perspectiveProjectionMatrix;
 
@@ -1101,6 +1100,27 @@ void Display(void)
     ZeroMemory((void*)&constantBuffer, sizeof(CBUFFER));
     constantBuffer.WorldViewProjectionMatrix = wvpMatrix;
     gpID3D11DeviceContext->UpdateSubresource(gpID3D11Buffer_ConstantBuffer, 0, NULL, &constantBuffer, 0, 0);
+
+    square_vertices[0] = -2.0f;
+    square_vertices[1] = 1.0f;
+    square_vertices[2] = 0.0f;
+
+    square_vertices[3] = 0.0f;
+    square_vertices[4] = 1.0f;
+    square_vertices[5] = 0.0f;
+
+    square_vertices[6] = -2.0f;
+    square_vertices[7] = -1.0f;
+    square_vertices[8] = 0.0f;
+
+    square_vertices[9] = 0.0f;
+    square_vertices[10] = -1.0f;
+    square_vertices[11] = 0.0f;
+    
+    ZeroMemory((void*)&d3d11MappedSubresource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+    gpID3D11DeviceContext->Map(gpID3D11Buffer_VertexBuffer_position, 0, D3D11_MAP_WRITE_DISCARD, 0, &d3d11MappedSubresource);
+    memcpy(d3d11MappedSubresource.pData, square_vertices, sizeof(square_vertices));
+    gpID3D11DeviceContext->Unmap(gpID3D11Buffer_VertexBuffer_position, 0);
 
     //set vertex buffer into pipeline
     stride = sizeof(float) * 3;
@@ -1118,6 +1138,47 @@ void Display(void)
     //draw
     gpID3D11DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
     gpID3D11DeviceContext->Draw(4, 0);
+
+    //tilted square
+
+    square_vertices[0] = 1.0f;
+    square_vertices[1] = 1.0f;
+    square_vertices[2] = 0.0f;
+
+    square_vertices[3] = 2.41421f;
+    square_vertices[4] = 1.0f;
+    square_vertices[5] = 1.41421f;
+
+    square_vertices[6] = 1.0f;
+    square_vertices[7] = -1.0f;
+    square_vertices[8] = 0.0f;
+
+    square_vertices[9] = 2.41421f;
+    square_vertices[10] = -1.0f;
+    square_vertices[11] = 1.41421f;
+    
+    ZeroMemory((void*)&d3d11MappedSubresource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+    gpID3D11DeviceContext->Map(gpID3D11Buffer_VertexBuffer_position, 0, D3D11_MAP_WRITE_DISCARD, 0, &d3d11MappedSubresource);
+    memcpy(d3d11MappedSubresource.pData, square_vertices, sizeof(square_vertices));
+    gpID3D11DeviceContext->Unmap(gpID3D11Buffer_VertexBuffer_position, 0);
+
+    //set vertex buffer into pipeline
+    stride = sizeof(float) * 3;
+    offset = 0;
+    gpID3D11DeviceContext->IASetVertexBuffers(0, 1, &gpID3D11Buffer_VertexBuffer_position, &stride, &offset);
+    
+    stride = sizeof(float) * 2;
+    offset = 0;
+    gpID3D11DeviceContext->IASetVertexBuffers(1, 1, &gpID3D11Buffer_VertexBuffer_texcoord, &stride, &offset);
+
+    //set sampler slot
+    gpID3D11DeviceContext->PSSetShaderResources(0, 1, &gpID3D11ShaderResourceView_texture);
+    gpID3D11DeviceContext->PSSetSamplers(0, 1, &gpID3D11SamplerState_texture);
+
+    //draw
+    gpID3D11DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+    gpID3D11DeviceContext->Draw(4, 0);
+
 
     //swap buffers
     gpIDXGISwapChain->Present(0, 0);
