@@ -43,14 +43,14 @@ IDXGISwapChain *gpIDXGISwapChain = NULL;
 ID3D11Device *gpID3D11Device = NULL;
 ID3D11DeviceContext *gpID3D11DeviceContext = NULL;
 ID3D11RenderTargetView *gpID3D11RenderTargetView = NULL;
+ID3D11RasterizerState *gpID3D11RasterizerState = NULL;
 
 ID3D11VertexShader *gpID3D11VertexShader = NULL;
 ID3D11PixelShader *gpID3D11PixelShader = NULL;
-ID3D11Buffer *gpID3D11Buffer_VertexBuffer_position = NULL;
-ID3D11Buffer *gpID3D11Buffer_VertexBuffer_color = NULL;
 ID3D11InputLayout *gpID3D11InputLayout = NULL;
 ID3D11Buffer *gpID3D11Buffer_ConstantBuffer = NULL;
-ID3D11RasterizerState *gpID3D11RasterizerState = NULL;
+ID3D11Buffer *gpID3D11Buffer_VertexBuffer_position = NULL;
+ID3D11Buffer *gpID3D11Buffer_VertexBuffer_color = NULL;
 
 struct CBUFFER
 {

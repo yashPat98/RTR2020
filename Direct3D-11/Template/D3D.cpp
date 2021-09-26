@@ -39,19 +39,20 @@ FILE*  gpFile = NULL;              //log file handle
 char gLogFileName[] = "log.txt";   //log file name
 
 float gClearColor[4];
-IDXGISwapChain *gpIDXGISwapChain = NULL;
-ID3D11Device *gpID3D11Device = NULL;
-ID3D11DeviceContext *gpID3D11DeviceContext = NULL;
-ID3D11RenderTargetView *gpID3D11RenderTargetView = NULL;
-ID3D11RasterizerState *gpID3D11RasterizerState = NULL;
-ID3D11DepthStencilView *gpID3D11DepthStencilView = NULL;
 
-ID3D11VertexShader *gpID3D11VertexShader = NULL;
-ID3D11PixelShader *gpID3D11PixelShader = NULL;
-ID3D11Buffer *gpID3D11Buffer_VertexBuffer_position = NULL;
-ID3D11Buffer *gpID3D11Buffer_VertexBuffer_color = NULL;
-ID3D11InputLayout *gpID3D11InputLayout = NULL;
-ID3D11Buffer *gpID3D11Buffer_ConstantBuffer = NULL;
+IDXGISwapChain          *gpIDXGISwapChain = NULL;
+ID3D11Device            *gpID3D11Device = NULL;
+ID3D11DeviceContext     *gpID3D11DeviceContext = NULL;
+ID3D11RenderTargetView  *gpID3D11RenderTargetView = NULL;
+ID3D11RasterizerState   *gpID3D11RasterizerState = NULL;
+ID3D11DepthStencilView  *gpID3D11DepthStencilView = NULL;
+
+ID3D11VertexShader      *gpID3D11VertexShader = NULL;
+ID3D11PixelShader       *gpID3D11PixelShader = NULL;
+ID3D11InputLayout       *gpID3D11InputLayout = NULL;
+ID3D11Buffer            *gpID3D11Buffer_ConstantBuffer = NULL;
+
+ID3D11Buffer            *gpID3D11Buffer_VertexBuffer = NULL;
 
 struct CBUFFER
 {
@@ -59,7 +60,6 @@ struct CBUFFER
 };
 
 XMMATRIX perspectiveProjectionMatrix;
-float angle_pyramid = 0.0f;
 
 //windows entry point function
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int iCmdShow)
@@ -123,7 +123,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLi
     //create window
     hwnd = CreateWindowEx(WS_EX_APPWINDOW,                //extended window style          
             szAppName,                                    //class name
-            TEXT("Direct3D11 : 3D Pyramid"),              //window caption
+            TEXT("Direct3D11 : Perspective"),             //window caption
             WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN |       //window style
             WS_CLIPSIBLINGS | WS_VISIBLE,   
             init_x,                                       //X-coordinate of top left corner of window 
@@ -448,23 +448,15 @@ HRESULT Initialize(void)
 
     //vertex shader
     const char *vertexShaderSourceCode = 
-        "cbuffer ConstantBuffer"                                                        \
-        "{"                                                                             \
-        "   float4x4 worldViewProjectionMatrix;"                                        \
-        "}"                                                                             \
+        "cbuffer ConstantBuffer"                                        \
+        "{"                                                             \
+        "   float4x4 worldViewProjectionMatrix;"                        \
+        "}"                                                             \
 
-        "struct vertex_output"                                                          \
-        "{"                                                                             \
-        "   float4 position:SV_POSITION;"                                               \
-        "   float4 color:COLOR;"                                                        \
-        "};"                                                                            \
-
-        "vertex_output main(float4 pos:POSITION, float4 col:COLOR)"                     \
-        "{"                                                                             \
-        "   vertex_output output;"                                                      \
-        "   output.position = mul(worldViewProjectionMatrix, pos);"                     \
-        "   output.color = col;"                                                        \
-        "   return (output);"                                                           \
+        "float4 main(float4 pos : POSITION) : SV_POSITION"              \
+        "{"                                                             \
+        "   float4 position = mul(worldViewProjectionMatrix, pos);"     \
+        "   return (position);"                                         \
         "}";
 
     //buffers for object code and error 
@@ -501,6 +493,7 @@ HRESULT Initialize(void)
         {
             fopen_s(&gpFile, gLogFileName, "a+");
             fprintf(gpFile, "Error : D3DCompile() failed (COM error).\n");
+            fprintf(gpFile, "--------------------------------------------------------------------------\n");
             fclose(gpFile);
             return (hr);
         }
@@ -524,6 +517,7 @@ HRESULT Initialize(void)
     {
         fopen_s(&gpFile, gLogFileName, "a+");
         fprintf(gpFile, "Error : ID3D11Device::CreateVertexShader() failed.\n");
+        fprintf(gpFile, "--------------------------------------------------------------------------\n");
         fclose(gpFile);
         return (hr);
     }
@@ -533,15 +527,9 @@ HRESULT Initialize(void)
 
     //pixel shader 
     const char *pixelShaderSourceCode = 
-        "struct vertex_output"                              \
-        "{"                                                 \
-        "   float4 position:SV_POSITION;"                   \
-        "   float4 color:COLOR;"                            \
-        "};"                                                \
-
-        "float4 main(vertex_output input):SV_TARGET"        \
-        "{"                                                 \
-        "   return (input.color);"                          \
+        "float4 main(void) : SV_TARGET"                 \
+        "{"                                             \
+        "   return (float4(1.0f, 1.0f, 1.0f, 1.0f));"   \
         "}";
 
     //buffers for object code and error 
@@ -610,27 +598,19 @@ HRESULT Initialize(void)
     pID3DBlob_PixelShaderCode = NULL;
 
     //initialize input layout 
-    D3D11_INPUT_ELEMENT_DESC d3d11InputElementDesc[2];
-
-    d3d11InputElementDesc[0].SemanticName = "POSITION";
-    d3d11InputElementDesc[0].SemanticIndex = 0;
-    d3d11InputElementDesc[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-    d3d11InputElementDesc[0].AlignedByteOffset = 0;
-    d3d11InputElementDesc[0].InputSlot = 0;
-    d3d11InputElementDesc[0].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-    d3d11InputElementDesc[0].InstanceDataStepRate = 0;
-
-    d3d11InputElementDesc[1].SemanticName = "COLOR";
-    d3d11InputElementDesc[1].SemanticIndex = 0;
-    d3d11InputElementDesc[1].Format = DXGI_FORMAT_R32G32B32_FLOAT;
-    d3d11InputElementDesc[1].AlignedByteOffset = 0;
-    d3d11InputElementDesc[1].InputSlot = 1;
-    d3d11InputElementDesc[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-    d3d11InputElementDesc[1].InstanceDataStepRate = 0;
+    D3D11_INPUT_ELEMENT_DESC d3d11InputElementDesc;
+    ZeroMemory((void*)&d3d11InputElementDesc, sizeof(D3D11_INPUT_ELEMENT_DESC));
+    d3d11InputElementDesc.SemanticName = "POSITION";
+    d3d11InputElementDesc.SemanticIndex = 0;
+    d3d11InputElementDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+    d3d11InputElementDesc.AlignedByteOffset = 0;
+    d3d11InputElementDesc.InputSlot = 0;
+    d3d11InputElementDesc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+    d3d11InputElementDesc.InstanceDataStepRate = 0;
 
     hr = gpID3D11Device->CreateInputLayout(
-                            d3d11InputElementDesc,
-                            _ARRAYSIZE(d3d11InputElementDesc),
+                            &d3d11InputElementDesc,
+                            1,
                             pID3DBlob_VertexShaderCode->GetBufferPointer(),
                             pID3DBlob_VertexShaderCode->GetBufferSize(),
                             &gpID3D11InputLayout
@@ -652,98 +632,8 @@ HRESULT Initialize(void)
     pID3DBlob_VertexShaderCode->Release();
     pID3DBlob_VertexShaderCode = NULL;
 
-    //setup vertices, normals and texcoords
-    const float pyramid_vertices[] = 
-    {
-        //front
-		+0.0f, +1.0f, +0.0f,   
-		+1.0f, -1.0f, -1.0f, 
-		-1.0f, -1.0f, -1.0f,  
-
-		//right
-        +0.0f, +1.0f, +0.0f,   
-		+1.0f, -1.0f, +1.0f,  
-		+1.0f, -1.0f, -1.0f,   
-
-		//back
-		+0.0f, +1.0f, +0.0f,  
-		-1.0f, -1.0f, +1.0f, 
-		+1.0f, -1.0f, +1.0f,  
-
-		//left
-		+0.0f, +1.0f, +0.0f,  
-		-1.0f, -1.0f, -1.0f,  
-		-1.0f, -1.0f, +1.0f, 
-    };
-
-    const float pyramid_colors[] = 
-    {
-        //front
-		+1.0f, +0.0f, +0.0f,  
-		+0.0f, +0.0f, +1.0f,  
-		+0.0f, +1.0f, +0.0f,  
-
-		//right
-        +1.0f, +0.0f, +0.0f,  
-		+0.0f, +1.0f, +0.0f,   
-		+0.0f, +0.0f, +1.0f,   
-
-		//back
-		+1.0f, +0.0f, +0.0f,  
-		+0.0f, +0.0f, +1.0f,  
-		+0.0f, +1.0f, +0.0f,  
-
-		//left
-		+1.0f, +0.0f, +0.0f,  
-		+0.0f, +1.0f, +0.0f, 
-		+0.0f, +0.0f, +1.0f,   
-    };
-
-    //create vertex buffer for position
-    D3D11_BUFFER_DESC d3d11BufferDesc;
-    ZeroMemory((void*)&d3d11BufferDesc, sizeof(D3D11_BUFFER_DESC));
-    d3d11BufferDesc.ByteWidth = sizeof(float) * _ARRAYSIZE(pyramid_vertices);
-    d3d11BufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    d3d11BufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    d3d11BufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-
-    hr = gpID3D11Device->CreateBuffer(&d3d11BufferDesc, NULL, &gpID3D11Buffer_VertexBuffer_position);
-    if(FAILED(hr))
-    {
-        fopen_s(&gpFile, gLogFileName, "a+");
-        fprintf(gpFile, "Error : ID3D11Device::CreateBuffer() failed for position buffer.\n");
-        fclose(gpFile);
-        return (hr);
-    }
-
-    D3D11_MAPPED_SUBRESOURCE d3d11MappedSubresource;
-    ZeroMemory((void*)&d3d11MappedSubresource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-    gpID3D11DeviceContext->Map(gpID3D11Buffer_VertexBuffer_position, 0, D3D11_MAP_WRITE_DISCARD, 0, &d3d11MappedSubresource);
-    memcpy(d3d11MappedSubresource.pData, pyramid_vertices, sizeof(pyramid_vertices));
-    gpID3D11DeviceContext->Unmap(gpID3D11Buffer_VertexBuffer_position, 0);
-
-    //create vertex buffer for color
-    ZeroMemory((void*)&d3d11BufferDesc, sizeof(D3D11_BUFFER_DESC));
-    d3d11BufferDesc.ByteWidth = sizeof(float) * _ARRAYSIZE(pyramid_colors);
-    d3d11BufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    d3d11BufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    d3d11BufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-
-    hr = gpID3D11Device->CreateBuffer(&d3d11BufferDesc, NULL, &gpID3D11Buffer_VertexBuffer_color);
-    if(FAILED(hr))
-    {
-        fopen_s(&gpFile, gLogFileName, "a+");
-        fprintf(gpFile, "Error : ID3D11Device::CreateBuffer() failed for color buffer.\n");
-        fclose(gpFile);
-        return (hr);
-    }
-
-    ZeroMemory((void*)&d3d11MappedSubresource, sizeof(D3D11_MAPPED_SUBRESOURCE));
-    gpID3D11DeviceContext->Map(gpID3D11Buffer_VertexBuffer_color, 0, D3D11_MAP_WRITE_DISCARD, 0, &d3d11MappedSubresource);
-    memcpy(d3d11MappedSubresource.pData, pyramid_colors, sizeof(pyramid_colors));
-    gpID3D11DeviceContext->Unmap(gpID3D11Buffer_VertexBuffer_color, 0);
-
     //create constant buffer 
+    D3D11_BUFFER_DESC d3d11BufferDesc;
     ZeroMemory((void*)&d3d11BufferDesc, sizeof(D3D11_BUFFER_DESC));
     d3d11BufferDesc.ByteWidth = sizeof(CBUFFER);
     d3d11BufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
@@ -760,6 +650,37 @@ HRESULT Initialize(void)
     //set constant buffer into pipeline
     gpID3D11DeviceContext->VSSetConstantBuffers(0, 1, &gpID3D11Buffer_ConstantBuffer);
 
+    //setup vertices, normals and texcoords
+    const float vertices[] = 
+    {
+        0.0f, 1.0f, 0.0f, 
+        1.0f, -1.0f, 0.0f, 
+        -1.0f, -1.0f, 0.0f
+    };
+
+    //create vertex buffer
+    ZeroMemory((void*)&d3d11BufferDesc, sizeof(D3D11_BUFFER_DESC));
+    d3d11BufferDesc.ByteWidth = sizeof(float) * _ARRAYSIZE(vertices);
+    d3d11BufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    d3d11BufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    d3d11BufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+
+    hr = gpID3D11Device->CreateBuffer(&d3d11BufferDesc, NULL, &gpID3D11Buffer_VertexBuffer);
+    if(FAILED(hr))
+    {
+        fopen_s(&gpFile, gLogFileName, "a+");
+        fprintf(gpFile, "Error : ID3D11Device::CreateBuffer() failed for vertex buffer.\n");
+        fclose(gpFile);
+        return (hr);
+    }
+
+    //copy vertices into buffer
+    D3D11_MAPPED_SUBRESOURCE d3d11MappedSubresource;
+    ZeroMemory((void*)&d3d11MappedSubresource, sizeof(D3D11_MAPPED_SUBRESOURCE));
+    gpID3D11DeviceContext->Map(gpID3D11Buffer_VertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &d3d11MappedSubresource);
+    memcpy(d3d11MappedSubresource.pData, vertices, sizeof(vertices));
+    gpID3D11DeviceContext->Unmap(gpID3D11Buffer_VertexBuffer, 0);
+
     //create rasterizer state
     D3D11_RASTERIZER_DESC d3d11RasterizerDesc;
     ZeroMemory((void*)&d3d11RasterizerDesc, sizeof(D3D11_RASTERIZER_DESC));
@@ -767,12 +688,12 @@ HRESULT Initialize(void)
     d3d11RasterizerDesc.CullMode = D3D11_CULL_NONE;
     d3d11RasterizerDesc.DepthBias = 0;
     d3d11RasterizerDesc.DepthBiasClamp = 0.0f;
-    d3d11RasterizerDesc.DepthClipEnable = TRUE;
+    d3d11RasterizerDesc.DepthClipEnable = FALSE;
     d3d11RasterizerDesc.FillMode = D3D11_FILL_SOLID;
     d3d11RasterizerDesc.FrontCounterClockwise = FALSE;
-    d3d11RasterizerDesc.MultisampleEnable = FALSE;       
+    d3d11RasterizerDesc.MultisampleEnable = FALSE;
     d3d11RasterizerDesc.ScissorEnable = FALSE;
-    d3d11RasterizerDesc.SlopeScaledDepthBias = 0.0f;
+    d3d11RasterizerDesc.SlopeScaledDepthBias = FALSE;
 
     hr = gpID3D11Device->CreateRasterizerState(&d3d11RasterizerDesc, &gpID3D11RasterizerState);
     if(FAILED(hr))
@@ -946,12 +867,12 @@ HRESULT Resize(int width, int height)
     d3d11Texture2DDesc.Format = DXGI_FORMAT_D32_FLOAT;
     d3d11Texture2DDesc.Usage = D3D11_USAGE_DEFAULT;
     d3d11Texture2DDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-    d3d11Texture2DDesc.SampleDesc.Count = 1;                                //1 to 4
-    d3d11Texture2DDesc.SampleDesc.Quality = 0;                              //default
-    d3d11Texture2DDesc.ArraySize = 1;                                       //default
-    d3d11Texture2DDesc.MipLevels = 1;                                       //default
-    d3d11Texture2DDesc.CPUAccessFlags = 0;                                  //default
-    d3d11Texture2DDesc.MiscFlags = 0;                                       //default
+    d3d11Texture2DDesc.SampleDesc.Count = 1;                                
+    d3d11Texture2DDesc.SampleDesc.Quality = 0;                              
+    d3d11Texture2DDesc.ArraySize = 1;                                      
+    d3d11Texture2DDesc.MipLevels = 1;                                       
+    d3d11Texture2DDesc.CPUAccessFlags = 0;                                 
+    d3d11Texture2DDesc.MiscFlags = 0;                                     
 
     hr = gpID3D11Device->CreateTexture2D(&d3d11Texture2DDesc, NULL, &pID3D11Texture2D_DepthBuffer);
     if(FAILED(hr))
@@ -1002,40 +923,20 @@ HRESULT Resize(int width, int height)
 void Display(void)
 {
     //variable declarations
-    UINT stride;
-    UINT offset;
-
+    CBUFFER constantBuffer;
     XMMATRIX worldMatrix;
     XMMATRIX viewMatrix;
     XMMATRIX wvpMatrix;
-    XMMATRIX translationMatrix;
-    XMMATRIX rotationMatrix;
-
-    CBUFFER constantBuffer;
+    UINT stride;
+    UINT offset;
 
     //code
-    //clear color buffer
+    //clear buffers
     gpID3D11DeviceContext->ClearRenderTargetView(gpID3D11RenderTargetView, gClearColor);
-    
-    //clear depth stencil buffer
     gpID3D11DeviceContext->ClearDepthStencilView(gpID3D11DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-    //set vertex buffer into pipeline
-    stride = sizeof(float) * 3;
-    offset = 0;
-    gpID3D11DeviceContext->IASetVertexBuffers(0, 1, &gpID3D11Buffer_VertexBuffer_position, &stride, &offset);
-    
-    stride = sizeof(float) * 3;
-    offset = 0;
-    gpID3D11DeviceContext->IASetVertexBuffers(1, 1, &gpID3D11Buffer_VertexBuffer_color, &stride, &offset);
-
-    //select geometry primitive
-    gpID3D11DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
     //set matrices 
-    translationMatrix = XMMatrixTranslation(0.0f, 0.0f, 5.0f);
-    rotationMatrix = XMMatrixRotationY(-angle_pyramid);
-    worldMatrix = rotationMatrix * translationMatrix;
+    worldMatrix = XMMatrixTranslation(0.0f, 0.0f, 3.0f);
     viewMatrix = XMMatrixIdentity();
     wvpMatrix = worldMatrix * viewMatrix * perspectiveProjectionMatrix;
 
@@ -1044,13 +945,14 @@ void Display(void)
     constantBuffer.WorldViewProjectionMatrix = wvpMatrix;
     gpID3D11DeviceContext->UpdateSubresource(gpID3D11Buffer_ConstantBuffer, 0, NULL, &constantBuffer, 0, 0);
 
-    //draw
-    gpID3D11DeviceContext->Draw(12, 0);
+    //set buffers into pipeline
+    stride = sizeof(float) * 3;
+    offset = 0;
+    gpID3D11DeviceContext->IASetVertexBuffers(0, 1, &gpID3D11Buffer_VertexBuffer, &stride, &offset);
 
-    //update
-    angle_pyramid += 0.001f;
-    if(angle_pyramid >= 360.0f)
-        angle_pyramid = 0.0f;
+    //draw
+    gpID3D11DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    gpID3D11DeviceContext->Draw(3, 0);
 
     //swap buffers
     gpIDXGISwapChain->Present(0, 0);
@@ -1078,16 +980,10 @@ void Cleanup(void)
         gpID3D11Buffer_ConstantBuffer = NULL;
     }
 
-    if(gpID3D11Buffer_VertexBuffer_color)
+    if(gpID3D11Buffer_VertexBuffer)
     {
-        gpID3D11Buffer_VertexBuffer_color->Release();
-        gpID3D11Buffer_VertexBuffer_color = NULL;
-    }
-
-    if(gpID3D11Buffer_VertexBuffer_position)
-    {
-        gpID3D11Buffer_VertexBuffer_position->Release();
-        gpID3D11Buffer_VertexBuffer_position = NULL;
+        gpID3D11Buffer_VertexBuffer->Release();
+        gpID3D11Buffer_VertexBuffer = NULL;
     }
 
     if(gpID3D11InputLayout)

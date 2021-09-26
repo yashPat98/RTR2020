@@ -900,6 +900,7 @@ HRESULT loadD3DTexture(ID3D11ShaderResourceView **ppID3D11ShaderResourceView)
     HRESULT hr;
     D3D11_TEXTURE2D_DESC d3d11Texture2dDesc;
     D3D11_SUBRESOURCE_DATA d3d11SubresourceData;
+    D3D11_SHADER_RESOURCE_VIEW_DESC d3d11ShaderResourceViewDesc;
     ID3D11Texture2D *pTexture = NULL;
 
     //code
@@ -929,6 +930,9 @@ HRESULT loadD3DTexture(ID3D11ShaderResourceView **ppID3D11ShaderResourceView)
         fclose(gpFile);
         return (hr);
     }
+
+    ZeroMemory((void*)&d3d11ShaderResourceViewDesc, sizeof(D3D11_SHADER_RESOURCE_VIEW_DESC));
+    d3d11ShaderResourceViewDesc.ViewDimension = 
 
     hr = gpID3D11Device->CreateShaderResourceView(pTexture, NULL, ppID3D11ShaderResourceView);
 
