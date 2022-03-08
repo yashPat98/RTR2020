@@ -444,19 +444,19 @@ void Initialize(void)
         "layout(triangles)in;"                          \
         "layout(triangle_strip, max_vertices = 9)out;"  \
         "uniform mat4 u_mvpMatrix;"                     \
-        "void main(void)"                               \
-        "{"                                             \
-        "   for(int i = 0; i < 3; i++)"                 \
-        "   {"                                          \
-        "       gl_Position = u_mvpMatrix * (gl_in[i].gl_Position + vec4(0.0f, 1.0f, 0.0f, 1.0f));"       \
-        "       EmitVertex();"                                                                            \
-        "       gl_Position = u_mvpMatrix * (gl_in[i].gl_Position + vec4(-1.0f, -1.0f, 0.0f, 1.0f));"     \
-        "       EmitVertex();"                                                                            \
-        "       gl_Position = u_mvpMatrix * (gl_in[i].gl_Position + vec4(1.0f, -1.0f, 0.0f, 1.0f));"      \
-        "       EmitVertex();"                                                                            \
+        "void main(void)"                                                                                   \
+        "{"                                                                                                 \
+        "   for(int i = 0; i < 3; i++)"                                                                     \
+        "   {"                                                                                              \
+        "       gl_Position = u_mvpMatrix * (gl_in[i].gl_Position + vec4(0.0f, 1.0f, 0.0f, 1.0f));"         \
+        "       EmitVertex();"                                                                              \
+        "       gl_Position = u_mvpMatrix * (gl_in[i].gl_Position + vec4(-1.0f, -1.0f, 0.0f, 1.0f));"       \
+        "       EmitVertex();"                                                                              \
+        "       gl_Position = u_mvpMatrix * (gl_in[i].gl_Position + vec4(1.0f, -1.0f, 0.0f, 1.0f));"        \
+        "       EmitVertex();"                                                                              \
 
-        "       EndPrimitive();"                        \
-        "   }"                                          \
+        "       EndPrimitive();"                                                                            \
+        "   }"                                                                                              \
         "}";
 
     //provide source code to shader object 

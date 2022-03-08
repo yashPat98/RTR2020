@@ -453,15 +453,15 @@ void Initialize(void)
     
     //shader source code
     const GLchar* tessellationControlShaderSourceCode = 
-        "#version 450 core"                             \
-        "\n"                                            \
+        "#version 450 core"                                                                 \
+        "\n"                                                                                \
         
-        "layout(vertices = 4)out;"                      \
-        "uniform int u_numberOfSegments;"               \
-        "uniform int u_numberOfStrips;"                 \
+        "layout(vertices = 4)out;"                                                          \
+        "uniform int u_numberOfSegments;"                                                   \
+        "uniform int u_numberOfStrips;"                                                     \
 
-        "void main(void)"                               \
-        "{"                                             \
+        "void main(void)"                                                                   \
+        "{"                                                                                 \
         "   gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;"      \
         "   gl_TessLevelOuter[0] = float(u_numberOfStrips);"                                \
         "   gl_TessLevelOuter[1] = float(u_numberOfSegments);"                              \
