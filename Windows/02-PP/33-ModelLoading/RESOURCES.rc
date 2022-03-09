@@ -1,0 +1,4 @@
+#include "RESOURCES.h"
+
+MYICON ICON YIP.ico
+MONKEYHEAD_BITMAP BITMAP monkey.bmp
